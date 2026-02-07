@@ -358,6 +358,74 @@ function next(){
  });
 }
 
+let dragCard=null;
+let dragIndex=null;
+let fromShop=false;
+
+document.addEventListener("pointerdown",(e)=>{
+ let card=e.target.closest(".card");
+ if(!card) return;
+
+ dragCard=card.cloneNode(true);
+ dragCard.style.position="fixed";
+ dragCard.style.pointerEvents="none";
+ dragCard.style.opacity=0.7;
+ dragCard.style.zIndex=999;
+
+ document.body.appendChild(dragCard);
+
+ moveAt(e);
+
+ if(card.parentElement.id=="shopCards"){
+  fromShop=true;
+  dragIndex=[...card.parentElement.children].indexOf(card);
+ }else{
+  fromShop=false;
+  dragIndex=[...card.parentElement.children].indexOf(card);
+ }
+});
+
+document.addEventListener("pointermove",(e)=>{
+ if(!dragCard) return;
+ moveAt(e);
+});
+
+document.addEventListener("pointerup",(e)=>{
+ if(!dragCard) return;
+
+ let deckRect=document.getElementById("deck").getBoundingClientRect();
+ let sellRect=document.getElementById("sellZone").getBoundingClientRect();
+
+ let x=e.clientX;
+ let y=e.clientY;
+
+ // ショップ→デッキ
+ if(fromShop &&
+   x>deckRect.left && x<deckRect.right &&
+   y>deckRect.top && y<deckRect.bottom){
+   buy(dragIndex);
+ }
+
+ // デッキ→売却
+ if(!fromShop &&
+   x>sellRect.left && x<sellRect.right &&
+   y>sellRect.top && y<sellRect.bottom){
+
+   let c=deck[dragIndex];
+   coin+=cost(c.rarity);
+   deck.splice(dragIndex,1);
+   refreshShop();
+ }
+
+ dragCard.remove();
+ dragCard=null;
+});
+
+function moveAt(e){
+ dragCard.style.left=e.clientX-70+"px";
+ dragCard.style.top=e.clientY-90+"px";
+}
+
 </script>
 </body>
 </html>
