@@ -1,16 +1,10 @@
-<style>
 body{
   background:#111;
   color:white;
   font-family:sans-serif;
   text-align:center;
-  touch-action:none;
-  position: fixed;
-  overflow: hidden;
-  width: 100%;
-  overscroll-behavior: none;
-  touch-action: none;
 }
+
 .hidden{display:none;}
 
 .card{
@@ -22,22 +16,33 @@ body{
   margin:5px;
   padding:5px;
   display:inline-block;
+  user-select:none;
 }
 
 .r4{border-color:gold;}
 .r5{
- border:3px solid;
- border-image:linear-gradient(45deg,lavender,aqua,white) 1;
+  border:3px solid;
+  border-image:linear-gradient(45deg,lavender,aqua,white) 1;
 }
 
 button{padding:10px;margin:5px;}
 
 #fade{
- position:fixed;
- inset:0;
- background:black;
- opacity:0;
- pointer-events:none;
- transition:0.4s;
+  position:fixed;
+  inset:0;
+  background:black;
+  opacity:0;
+  pointer-events:none;
+  transition:0.4s;
 }
-</style>
+
+#deck{
+  min-height:200px;
+  border:2px dashed gray;
+  padding:10px;
+}
+
+#sellZone{
+  height:80px;
+  border:2px dashed red;
+}
