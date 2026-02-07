@@ -8,6 +8,8 @@ body{
   position: fixed;
   overflow: hidden;
   width: 100%;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 .hidden{display:none;}
 
