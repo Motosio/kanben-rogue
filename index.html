@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <title>Card Rogue</title>
-  
 <link rel="stylesheet" href="style.css">
-  
 </head>
+
 <body>
 
 <div id="fade"></div>
@@ -24,10 +23,10 @@
 <button onclick="reroll()">更新(1コイン)</button>
 
 <h3>デッキ</h3>
-<div id="deck" style="min-height:200px;border:2px dashed gray;padding:10px;"></div>
+<div id="deck"></div>
 
 <h3>売却ゾーン</h3>
-<div id="sellZone" style="height:80px;border:2px dashed red;"></div>
+<div id="sellZone"></div>
 
 <button onclick="battle()">戦闘開始</button>
 </div>
@@ -40,6 +39,7 @@
 
 <script>
 // ===== データ =====
+
 const baseChars=[
 {name:"スウ",atk:300,hp:3000,rarity:3},
 {name:"レオナ",atk:400,hp:4000,rarity:4},
@@ -59,6 +59,11 @@ let coin=6;
 let deck=[];
 let shop=[];
 
+// ===== ユーティリティ =====
+
+function cost(r){return r==3?2:r==4?3:4;}
+function copyChar(c){return {...c,rank:1,currentHp:c.hp};}
+
 function fade(cb){
  let f=document.getElementById("fade");
  f.style.opacity=1;
@@ -71,10 +76,8 @@ function rarityPool(){
  return [3,3,3,3,4,4,4,4,5,5];
 }
 
-function cost(r){return r==3?2:r==4?3:4;}
-function copyChar(c){return {...c,rank:1,currentHp:c.hp};}
-
 // ===== 開始 =====
+
 function startGame(){
  fade(()=>{
   stage=1;coin=6;deck=[];
@@ -84,9 +87,10 @@ function startGame(){
  });
 }
 
-// ===== ショップ =====
 const start=document.getElementById("start");
 const shopDiv=document.getElementById("shop");
+
+// ===== ショップ =====
 
 function refreshShop(){
  stageText.innerText="Stage "+stage;
@@ -99,29 +103,72 @@ function refreshShop(){
   let list=baseChars.filter(c=>c.rarity==r);
   shop.push(copyChar(list[Math.floor(Math.random()*list.length)]));
  }
+
  drawShop();
  drawDeck();
 }
 
 function drawShop(){
  shopCards.innerHTML="";
- shop.forEach((c)=>{
+ shop.forEach((c,i)=>{
   let d=document.createElement("div");
   d.className="card r"+c.rarity;
+  d.draggable=true;
+
   d.innerHTML=`★${c.rarity}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}<br>${cost(c.rarity)}c`;
+
+  d.ondragstart=e=>{
+    e.dataTransfer.setData("shopIndex",i);
+  };
+
   shopCards.appendChild(d);
  });
 }
 
 function drawDeck(){
- deck.innerHTML="";
- deck.forEach((c)=>{
-  let e=document.createElement("div");
-  e.className="card r"+c.rarity;
-  e.innerHTML=`R${c.rank}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}`;
-  deck.appendChild(e);
+ deckDiv.innerHTML="";
+ deck.forEach((c,i)=>{
+  let d=document.createElement("div");
+  d.className="card r"+c.rarity;
+  d.draggable=true;
+
+  d.innerHTML=`R${c.rank}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}`;
+
+  d.ondragstart=e=>{
+    e.dataTransfer.setData("deckIndex",i);
+  };
+
+  deckDiv.appendChild(d);
  });
 }
+
+const shopCards=document.getElementById("shopCards");
+const deckDiv=document.getElementById("deck");
+const sellZone=document.getElementById("sellZone");
+
+// ===== ドロップ処理 =====
+
+// ショップ→デッキ
+deckDiv.ondragover=e=>e.preventDefault();
+deckDiv.ondrop=e=>{
+ let i=e.dataTransfer.getData("shopIndex");
+ if(i==="") return;
+ buy(i);
+};
+
+// デッキ→売却
+sellZone.ondragover=e=>e.preventDefault();
+sellZone.ondrop=e=>{
+ let i=e.dataTransfer.getData("deckIndex");
+ if(i==="") return;
+
+ let c=deck[i];
+ coin+=cost(c.rarity);
+ deck.splice(i,1);
+ refreshShop();
+};
+
+// ===== 購入 =====
 
 function buy(i){
  let c=shop[i];
@@ -134,15 +181,26 @@ function buy(i){
  coin-=p;
 
  if(same){
-  if(same.rank<5){same.rank++;same.atk+=20;same.hp+=20;}
- }else deck.push(copyChar(c));
+  if(same.rank<5){
+   same.rank++;
+   same.atk+=20;
+   same.hp+=20;
+  }
+ }else{
+  deck.push(copyChar(c));
+ }
 
  refreshShop();
 }
 
-function reroll(){if(coin>0){coin--;refreshShop();}}
+function reroll(){
+ if(coin<=0) return;
+ coin--;
+ refreshShop();
+}
 
 // ===== 戦闘 =====
+
 function battle(){
  fade(()=>{
   shopDiv.classList.add("hidden");
@@ -158,6 +216,7 @@ function runBattle(){
  let boss=(stage==5||stage==10);
 
  let enemy={name:boss?"ボス":"雑魚",hp:boss?6000:2000,atk:boss?700:500};
+
  enemyArea.innerHTML=`<div class="card">${enemy.name}<br>⚔️${enemy.atk}<br>♥${enemy.hp}</div>`;
 
  deck.forEach(c=>c.currentHp=c.hp);
@@ -166,32 +225,36 @@ function runBattle(){
   for(let c of deck){
    if(c.currentHp<=0) continue;
    enemy.hp-=c.atk;
-   log+=`${c.name}攻撃→${c.atk}<br>`;
    if(enemy.hp<=0) break;
   }
-  if(enemy.hp<=0) break;
 
   if(boss) deck.forEach(c=>c.currentHp-=enemy.atk);
-  else for(let i=0;i<3;i++){
-   let t=deck[Math.floor(Math.random()*deck.length)];
-   t.currentHp-=enemy.atk;
+  else{
+   for(let i=0;i<3;i++){
+    let t=deck[Math.floor(Math.random()*deck.length)];
+    t.currentHp-=enemy.atk;
+   }
   }
  }
 
  if(deck.every(c=>c.currentHp<=0)){
-  log+="GAME OVER";stage=1;coin=6;deck=[];
+  log="GAME OVER";
+  stage=1;coin=6;deck=[];
  }else{
-  log+="勝利<br>";
+  log="勝利<br>";
+
   let reward=stage<=3?4:stage<=7?6:9;
   coin+=reward;
   log+=`コイン+${reward}<br>`;
-  stage++;
+
+  if(stage>=10){
+    log+="🎉ゲームクリア🎉";
+    stage=1;coin=6;deck=[];
+  }else stage++;
  }
 
- logDiv.innerHTML=log;
+ document.getElementById("log").innerHTML=log;
 }
-
-const logDiv=document.getElementById("log");
 
 function next(){
  fade(()=>{
@@ -200,72 +263,7 @@ function next(){
   refreshShop();
  });
 }
-
-// ===== 即ドラッグ =====
-let dragCard=null,dragIndex=null,fromShop=false;
-
-document.addEventListener("pointerdown",(e)=>{
- let card=e.target.closest(".card");
- if(!card) return;
-
- document.body.style.overflow="hidden";
-  
- dragCard=card.cloneNode(true);
- dragCard.style.position="fixed";
- dragCard.style.pointerEvents="none";
- dragCard.style.opacity=0.7;
- dragCard.style.zIndex=999;
- document.body.appendChild(dragCard);
-
- moveAt(e);
-
- let parent=card.parentElement.id;
- if(parent=="shopCards"){
-  fromShop=true;
-  dragIndex=[...shopCards.children].indexOf(card);
- }else if(parent=="deck"){
-  fromShop=false;
-  dragIndex=[...deck.children].indexOf(card);
- }
-});
-
-document.addEventListener("pointermove",(e)=>{
- if(dragCard) moveAt(e);
-});
-
-document.addEventListener("pointerup",(e)=>{
- if(!dragCard) return;
-
- document.body.style.overflow="";
-
- let deckRect=deck.getBoundingClientRect();
- let sellRect=sellZone.getBoundingClientRect();
-
- let x=e.clientX,y=e.clientY;
-
- if(fromShop &&
-   x>deckRect.left&&x<deckRect.right&&
-   y>deckRect.top&&y<deckRect.bottom){
-   buy(dragIndex);
- }
-
- if(!fromShop &&
-   x>sellRect.left&&x<sellRect.right&&
-   y>sellRect.top&&y<sellRect.bottom){
-   let c=deck[dragIndex];
-   coin+=cost(c.rarity);
-   deck.splice(dragIndex,1);
-   refreshShop();
- }
-
- dragCard.remove();
- dragCard=null;
-});
-
-function moveAt(e){
- dragCard.style.left=e.clientX-70+"px";
- dragCard.style.top=e.clientY-90+"px";
-}
 </script>
+
 </body>
 </html>
