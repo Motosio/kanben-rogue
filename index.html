@@ -210,7 +210,7 @@ function runBattle(){
 
  let enemy={
   name:boss?"ボス":"雑魚",
-  hp:boss?10000:6000,
+  hp:boss?6000:2000,
   atk:boss?700:500
  };
 
@@ -243,7 +243,16 @@ function runBattle(){
   log+="GAME OVER";
   stage=1; coin=6; deck=[];
  }else{
-  log+="勝利";
+  log+="勝利<br>";
+
+  let reward=0;
+  if(stage<=3) reward=4;
+  else if(stage<=7) reward=6;
+  else reward=9;
+
+  coin+=reward;
+  log+=`コイン+${reward}<br>`;
+
   stage++;
  }
 
