@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Card Rogue</title>
+<style>
+body{
+  background:#111;
+  color:white;
+  font-family:sans-serif;
+  text-align:center;
+}
+.hidden{display:none;}
+
+.card{
+  width:140px;
+  height:180px;
+  background:black;
+  border:3px solid blue;
+  border-radius:10px;
+  margin:5px;
+  padding:5px;
+  display:inline-block;
+}
+
+.r4{border-color:gold;}
+.r5{border:3px solid;
+  border-image:linear-gradient(45deg,lavender,aqua,white) 1;}
+
+button{padding:10px;margin:5px;}
+
+#fade{
+  position:fixed;
+  inset:0;
+  background:black;
+  opacity:0;
+  pointer-events:none;
+  transition:0.4s;
+}
+</style>
+</head>
+<body>
+
+<div id="fade"></div>
+
+<h2 id="stageText">Stage 1</h2>
+
+<!-- スタート画面 -->
+<div id="start">
+<button onclick="startGame()">スタート</button>
+<button>図鑑(未実装)</button>
+<button onclick="alert('敵を倒して進むだけです')">チュートリアル</button>
+</div>
+
+<!-- ショップ -->
+<div id="shop" class="hidden">
+<h3>Coin: <span id="coinText"></span></h3>
+<div id="shopCards"></div>
+<button onclick="reroll()">更新(1コイン)</button>
+
+<h3>デッキ</h3>
+<div id="deck"></div>
+
+<button onclick="battle()">戦闘開始</button>
+</div>
+
+<!-- 戦闘 -->
+<div id="battle" class="hidden">
+<div id="enemyArea"></div>
+<div id="log"></div>
+<button onclick="next()">次へ</button>
+</div>
+
+<script>
+// ===== データ =====
+
+const baseChars=[
+{name:"スウ",atk:300,hp:3000,rarity:3},
+{name:"レオナ",atk:400,hp:4000,rarity:4},
+{name:"コウ",atk:500,hp:5000,rarity:5},
+{name:"キョウ",atk:300,hp:3000,rarity:3},
+{name:"カフ",atk:400,hp:4000,rarity:4},
+{name:"イグノア",atk:300,hp:3000,rarity:3},
+{name:"アレクサンダー",atk:500,hp:5000,rarity:5},
+{name:"スフェリコン",atk:400,hp:4000,rarity:4},
+{name:"蜜夜",atk:400,hp:4000,rarity:4},
+{name:"メビウス",atk:400,hp:4000,rarity:4},
+{name:"ローマン",atk:300,hp:3000,rarity:3},
+];
+
+let stage=1;
+let coin=6;
+let deck=[];
+let shop=[];
+
+// ===== ユーティリティ =====
+
+function fade(cb){
+ let f=document.getElementById("fade");
+ f.style.opacity=1;
+ setTimeout(()=>{
+   cb();
+   f.style.opacity=0;
+ },400);
+}
+
+function rarityPool(){
+ if(stage<=3) return [3];
+ if(stage<=6) return [3,4];
+ return [3,3,3,3,4,4,4,4,5,5];
+}
+
+function cost(r){return r==3?2:r==4?3:4;}
+
+function copyChar(c){
+ return {...c,rank:1,currentHp:c.hp};
+}
+
+// ===== 開始 =====
+
+function startGame(){
+ fade(()=>{
+  stage=1; coin=6; deck=[];
+  document.getElementById("start").classList.add("hidden");
+  document.getElementById("shop").classList.remove("hidden");
+  refreshShop();
+ });
+}
+
+// ===== ショップ =====
+
+function refreshShop(){
+ document.getElementById("stageText").innerText="Stage "+stage;
+ document.getElementById("coinText").innerText=coin;
+
+ let pool=rarityPool();
+ shop=[];
+ for(let i=0;i<6;i++){
+  let r=pool[Math.floor(Math.random()*pool.length)];
+  let list=baseChars.filter(c=>c.rarity==r);
+  shop.push(copyChar(list[Math.floor(Math.random()*list.length)]));
+ }
+ drawShop();
+ drawDeck();
+}
+
+function drawShop(){
+ let area=document.getElementById("shopCards");
+ area.innerHTML="";
+ shop.forEach((c,i)=>{
+  let d=document.createElement("div");
+  d.className="card r"+c.rarity;
+  d.innerHTML=`★${c.rarity}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}<br>${cost(c.rarity)}c`;
+  d.onclick=()=>buy(i);
+  area.appendChild(d);
+ });
+}
+
+function drawDeck(){
+ let d=document.getElementById("deck");
+ d.innerHTML="";
+ deck.forEach(c=>{
+  let e=document.createElement("div");
+  e.className="card r"+c.rarity;
+  e.innerHTML=`R${c.rank}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}`;
+  d.appendChild(e);
+ });
+}
+
+function buy(i){
+ let c=shop[i];
+ let p=cost(c.rarity);
+ if(coin<p) return;
+
+ coin-=p;
+
+ let same=deck.find(x=>x.name==c.name);
+ if(same){
+  if(same.rank<5){
+   same.rank++;
+   same.atk+=20;
+   same.hp+=20;
+  }
+ }else{
+  deck.push(copyChar(c));
+ }
+
+ refreshShop();
+}
+
+function reroll(){
+ if(coin<=0) return;
+ coin--;
+ refreshShop();
+}
+
+// ===== 戦闘 =====
+
+function battle(){
+ fade(()=>{
+  document.getElementById("shop").classList.add("hidden");
+  document.getElementById("battle").classList.remove("hidden");
+  runBattle();
+ });
+}
+
+function runBattle(){
+ let log="";
+ let boss=(stage==5||stage==10);
+
+ let enemy={
+  name:boss?"ボス":"雑魚",
+  hp:boss?10000:6000,
+  atk:boss?700:500
+ };
+
+ document.getElementById("enemyArea").innerHTML=
+  `<div class="card">${enemy.name}<br>⚔️${enemy.atk}<br>♥${enemy.hp}</div>`;
+
+ deck.forEach(c=>c.currentHp=c.hp);
+
+ while(enemy.hp>0 && deck.some(c=>c.currentHp>0)){
+  for(let c of deck){
+   if(c.currentHp<=0) continue;
+   enemy.hp-=c.atk;
+   log+=`${c.name}攻撃→${c.atk}<br>`;
+   if(enemy.hp<=0) break;
+  }
+
+  if(enemy.hp<=0) break;
+
+  if(boss){
+   deck.forEach(c=>c.currentHp-=enemy.atk);
+  }else{
+   for(let i=0;i<3;i++){
+    let t=deck[Math.floor(Math.random()*deck.length)];
+    t.currentHp-=enemy.atk;
+   }
+  }
+ }
+
+ if(deck.every(c=>c.currentHp<=0)){
+  log+="GAME OVER";
+  stage=1; coin=6; deck=[];
+ }else{
+  log+="勝利";
+  stage++;
+ }
+
+ document.getElementById("log").innerHTML=log;
+}
+
+function next(){
+ fade(()=>{
+  document.getElementById("battle").classList.add("hidden");
+  document.getElementById("shop").classList.remove("hidden");
+  refreshShop();
+ });
+}
+
+</script>
+</body>
+</html>
