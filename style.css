@@ -1,0 +1,38 @@
+<style>
+body{
+  background:#111;
+  color:white;
+  font-family:sans-serif;
+  text-align:center;
+  touch-action:none;
+}
+.hidden{display:none;}
+
+.card{
+  width:140px;
+  height:180px;
+  background:black;
+  border:3px solid blue;
+  border-radius:10px;
+  margin:5px;
+  padding:5px;
+  display:inline-block;
+}
+
+.r4{border-color:gold;}
+.r5{
+ border:3px solid;
+ border-image:linear-gradient(45deg,lavender,aqua,white) 1;
+}
+
+button{padding:10px;margin:5px;}
+
+#fade{
+ position:fixed;
+ inset:0;
+ background:black;
+ opacity:0;
+ pointer-events:none;
+ transition:0.4s;
+}
+</style>
