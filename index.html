@@ -61,6 +61,9 @@ button{padding:10px;margin:5px;}
 <h3>デッキ</h3>
 <div id="deck"></div>
 
+<h3>売却ゾーン</h3>
+<div id="sellZone" style="height:80px;border:2px dashed red;"></div>
+
 <button onclick="battle()">戦闘開始</button>
 </div>
 
@@ -68,7 +71,7 @@ button{padding:10px;margin:5px;}
 <div id="battle" class="hidden">
 <div id="enemyArea"></div>
 <div id="log"></div>
-<button onclick="next()">次へ</button>
+<button id="nextBtn" onclick="next()">次へ</button>
 </div>
 
 <script>
@@ -159,22 +162,49 @@ function drawShop(){
 function drawDeck(){
  let d=document.getElementById("deck");
  d.innerHTML="";
- deck.forEach(c=>{
+
+ deck.forEach((c,idx)=>{
   let e=document.createElement("div");
   e.className="card r"+c.rarity;
+  e.draggable=true;
+
   e.innerHTML=`R${c.rank}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}`;
+
+  e.ondragstart=(ev)=>{
+    ev.dataTransfer.setData("index",idx);
+  };
+
   d.appendChild(e);
  });
 }
+
+let sell=document.getElementById("sellZone");
+
+sell.ondragover=(e)=>e.preventDefault();
+
+sell.ondrop=(e)=>{
+ let idx=e.dataTransfer.getData("index");
+ let c=deck[idx];
+
+ let price=cost(c.rarity);
+ coin+=price;
+
+ deck.splice(idx,1);
+ refreshShop();
+};
 
 function buy(i){
  let c=shop[i];
  let p=cost(c.rarity);
  if(coin<p) return;
 
+ let same=deck.find(x=>x.name==c.name);
+
+ // 重複でない＆5体超えるなら禁止
+ if(!same && deck.length>=5) return;
+
  coin-=p;
 
- let same=deck.find(x=>x.name==c.name);
  if(same){
   if(same.rank<5){
    same.rank++;
@@ -252,6 +282,15 @@ function runBattle(){
 
   coin+=reward;
   log+=`コイン+${reward}<br>`;
+
+  if(stage>=10){
+    log+="<br>🎉ゲームクリア🎉";
+    document.getElementById("nextBtn").innerText="タイトルへ";
+    stage=1;
+    coin=6;
+    deck=[];
+    return;
+  }
 
   stage++;
  }
