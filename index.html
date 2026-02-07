@@ -178,7 +178,22 @@ function drawDeck(){
  });
 }
 
-let sell=document.getElementById("sellZone");
+window.onload=()=>{
+ let sell=document.getElementById("sellZone");
+
+ sell.ondragover=(e)=>e.preventDefault();
+
+ sell.ondrop=(e)=>{
+  let idx=e.dataTransfer.getData("index");
+  let c=deck[idx];
+
+  let price=cost(c.rarity);
+  coin+=price;
+
+  deck.splice(idx,1);
+  refreshShop();
+ };
+};
 
 sell.ondragover=(e)=>e.preventDefault();
 
