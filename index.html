@@ -158,14 +158,9 @@ function drawShop(){
  shop.forEach((c,i)=>{
   let d=document.createElement("div");
   d.className="card r"+c.rarity;
-  d.draggable=true;
 
   d.innerHTML=`★${c.rarity}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}<br>${cost(c.rarity)}c`;
-
-  d.ondragstart=(ev)=>{
-    ev.dataTransfer.setData("shopIndex",i);
-  };
-
+   
   area.appendChild(d);
  });
 }
@@ -177,26 +172,9 @@ function drawDeck(){
  deck.forEach((c,idx)=>{
   let e=document.createElement("div");
   e.className="card r"+c.rarity;
-  e.draggable=true;
 
   e.innerHTML=`R${c.rank}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}`;
-
-  e.ondragstart=(ev)=>{
-    ev.dataTransfer.setData("deckIndex",idx);
-  };
-
-  e.ondrop=(ev)=>{
-    let from=ev.dataTransfer.getData("deckIndex");
-    if(from==="") return;
-
-    let temp=deck[from];
-    deck.splice(from,1);
-    deck.splice(idx,0,temp);
-    drawDeck();
-  };
-
-  e.ondragover=(ev)=>ev.preventDefault();
-
+   
   d.appendChild(e);
  });
 }
