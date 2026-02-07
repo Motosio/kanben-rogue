@@ -59,7 +59,11 @@ button{padding:10px;margin:5px;}
 <button onclick="reroll()">更新(1コイン)</button>
 
 <h3>デッキ</h3>
-<div id="deck"></div>
+<div id="deck" style="
+ min-height:200px;
+ border:2px dashed gray;
+ padding:10px;
+"></div>
 
 <h3>売却ゾーン</h3>
 <div id="sellZone" style="height:80px;border:2px dashed red;"></div>
@@ -150,15 +154,22 @@ function refreshShop(){
 function drawShop(){
  let area=document.getElementById("shopCards");
  area.innerHTML="";
+
  shop.forEach((c,i)=>{
   let d=document.createElement("div");
   d.className="card r"+c.rarity;
+  d.draggable=true;
+
   d.innerHTML=`★${c.rarity}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}<br>${cost(c.rarity)}c`;
-  d.onclick=()=>buy(i);
+
+  d.ondragstart=(ev)=>{
+    ev.dataTransfer.setData("shopIndex",i);
+  };
+
   area.appendChild(d);
  });
 }
-
+  
 function drawDeck(){
  let d=document.getElementById("deck");
  d.innerHTML="";
@@ -171,8 +182,20 @@ function drawDeck(){
   e.innerHTML=`R${c.rank}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}`;
 
   e.ondragstart=(ev)=>{
-    ev.dataTransfer.setData("index",idx);
+    ev.dataTransfer.setData("deckIndex",idx);
   };
+
+  e.ondrop=(ev)=>{
+    let from=ev.dataTransfer.getData("deckIndex");
+    if(from==="") return;
+
+    let temp=deck[from];
+    deck.splice(from,1);
+    deck.splice(idx,0,temp);
+    drawDeck();
+  };
+
+  e.ondragover=(ev)=>ev.preventDefault();
 
   d.appendChild(e);
  });
@@ -184,15 +207,29 @@ window.onload=()=>{
  sell.ondragover=(e)=>e.preventDefault();
 
  sell.ondrop=(e)=>{
-  let idx=e.dataTransfer.getData("index");
+  let idx=e.dataTransfer.getData("deckIndex");
+  if(idx==="") return;
+
   let c=deck[idx];
-
   let price=cost(c.rarity);
-  coin+=price;
 
+  coin+=price;
   deck.splice(idx,1);
+
   refreshShop();
  };
+
+ let deckDiv=document.getElementById("deck");
+
+ deckDiv.ondragover=(e)=>e.preventDefault();
+
+ deckDiv.ondrop=(e)=>{
+  let shopIndex=e.dataTransfer.getData("shopIndex");
+  if(shopIndex==="") return;
+
+  buy(shopIndex);
+ };
+  
 };
 
 sell.ondragover=(e)=>e.preventDefault();
