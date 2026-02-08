@@ -141,7 +141,7 @@ function drawDeck(){
   let d=document.createElement("div");
   d.className="card";
   let statusHtml=c.status.map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
-  d.innerHTML=`${c.name}<br>⚔️${c.atk}<br>♥${c.currentHp??c.hp}<br>${statusHtml}`;
+  d.innerHTML=`${c.name}<br>⚔️${calcAtk(c)}<br>♥${c.currentHp??c.hp}<br>${statusHtml}`;
   d.ondragstart=e=>e.dataTransfer.setData("deckIndex",i);
   deckDiv.appendChild(d);
  });
@@ -214,18 +214,28 @@ function startBattle(){
  log("戦闘開始 画面タップで進行");
 }
 
+// 麻痺・興奮を反映した攻撃力計算
+function calcAtk(unit){
+ let atk = unit.atk;
+ unit.status.forEach(s=>{
+   if(s.type==="麻痺") atk -= s.level*30;
+   if(s.type==="興奮") atk += s.level*30;
+ });
+ return Math.max(0, atk);
+}
+
 function drawEnemy(){
- let statusHtml=enemy.status.map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
- enemyArea.innerHTML=
- `<div class="card">${enemy.name}<br>⚔️${enemy.atk}<br>♥${enemy.hp}<br>${statusHtml}</div>`;
+ if(!enemy) return;
+ let statusHtml = enemy.status.map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
+ enemyArea.innerHTML = `<div class="card">${enemy.name}<br>⚔️${calcAtk(enemy)}<br>♥${enemy.hp}<br>${statusHtml}</div>`;
 }
 
 function drawAllies(){
  allyArea.innerHTML="";
  deck.forEach(c=>{
-  if(c.currentHp<=0) return;
-  let statusHtml=c.status.map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
-  allyArea.innerHTML+=`<div class="card">${c.name}<br>♥${c.currentHp}<br>${statusHtml}</div>`;
+   if(c.currentHp<=0) return;
+   let statusHtml = c.status.map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
+   allyArea.innerHTML += `<div class="card">${c.name}<br>⚔️${calcAtk(c)}<br>♥${c.currentHp}<br>${statusHtml}</div>`;
  });
 }
 
@@ -237,79 +247,72 @@ function nextTurn(){
 
  // 味方全員攻撃
  deck.forEach(actor=>{
-  if(actor.currentHp<=0) return;
+   if(actor.currentHp<=0) return;
 
-  if(isStunned(actor)){ 
-    log(actor.name+" は拘束で動けない！");
-    return;
-  }
+   if(isStunned(actor)){
+     log(actor.name+" は拘束で動けない！");
+     return;
+   }
 
-  let atk=actor.atk;
-  actor.status.forEach(s=>{
-    if(s.type==="麻痺") atk -= s.level*30;
-    if(s.type==="興奮") atk += s.level*30;
-  });
-  atk=Math.max(0,atk);
-  enemy.hp-=atk;
-  log(actor.name+" のこうげき！ "+atk+" ダメージ");
-});
+   let atk = calcAtk(actor);
+   enemy.hp -= atk;
+   log(actor.name+" のこうげき！ "+atk+" ダメージ");
+ });
 
-drawEnemy();
-if(enemy.hp<=0){ winBattle(); return; }
+ drawEnemy();
+ if(enemy.hp<=0){ winBattle(); return; }
 
-// 敵の攻撃
-let target=deck.find(c=>c.currentHp>0);
-if(target){
-  let atk=enemy.atk;
-  enemy.status.forEach(s=>{
-    if(s.type==="麻痺") atk -= s.level*30;
-    if(s.type==="興奮") atk += s.level*30;
-  });
-  atk=Math.max(0,atk);
-  target.currentHp-=atk;
-  log(enemy.name+" のこうげき！ "+target.name+" に "+atk+" ダメージ");
-}
+ // 敵の攻撃
+ let aliveTargets = deck.filter(c=>c.currentHp>0);
+ if(aliveTargets.length>0){
+   let target = aliveTargets[Math.floor(Math.random()*aliveTargets.length)];
+   let atk = calcAtk(enemy);
+   target.currentHp -= atk;
+   log(enemy.name+" のこうげき！ "+target.name+" に "+atk+" ダメージ");
+ }
 
-drawAllies();
+ // ターン終了時 状態異常処理
+ applyStatus(enemy);
+ deck.forEach(c=>applyStatus(c));
 
-// ターン終了時状態異常ダメージとターン減少
-applyStatus(enemy);
-deck.forEach(c=>applyStatus(c));
+ drawAllies();
+ drawEnemy();
 
-if(deck.every(c=>c.currentHp<=0)){ loseBattle(); return; }
+ if(deck.every(c=>c.currentHp<=0)){ loseBattle(); return; }
 
-turnIndex++;
+ turnIndex++;
 }
 
 function isStunned(c){ return c.status.some(s=>s.type==="拘束"); }
 
-function applyStatus(c){
-  let remove=[];
-  c.status.forEach((s,i)=>{
-    if(s.type==="毒"){
-      c.currentHp -= s.level*100;
-      log(c.name+" は毒で "+s.level*100+" ダメージ");
-    }
-    s.turn--;
-    if(s.turn<=0) remove.push(i);
-  });
-  remove.reverse().forEach(i=>c.status.splice(i,1));
+function applyStatus(unit){
+ if(!unit) return;
+ let remove=[];
+ unit.status.forEach((s,i)=>{
+   if(s.type==="毒"){
+     unit.currentHp -= s.level*100;
+     log(unit.name+" は毒で "+(s.level*100)+" ダメージ");
+   }
+   s.turn--;
+   if(s.turn<=0) remove.push(i);
+ });
+ remove.reverse().forEach(i=>unit.status.splice(i,1));
 }
 
 function winBattle(){
  let reward=5;
  coin+=reward;
  stage++;
- if(stage>10){
-  battleDiv.classList.add("hidden");
-  clearScreen.classList.remove("hidden");
-  return;
- }
  log("勝利 +"+reward+"コイン");
+ if(stage>10){
+   battleDiv.classList.add("hidden");
+   clearScreen.classList.remove("hidden");
+   return;
+ }
  setTimeout(()=>{
-  battleDiv.classList.add("hidden");
-  shopDiv.classList.remove("hidden");
-  refreshShop();
+   battleDiv.classList.add("hidden");
+   shopDiv.classList.remove("hidden");
+   refreshShop();
  },1000);
 }
 
@@ -319,44 +322,25 @@ function loseBattle(){
 }
 
 function backToTitle(){
-  // ステータス・データ初期化
-  stage = 1;
-  coin = 6;
-  deck = [];
-  shop = [];
-  enemy = null;
-  turnIndex = 0;
-
-  // 味方の currentHp と status をリセット
-  deck.forEach(c=>{
-    c.currentHp = c.hp;
-    c.status = [];
-  });
-
-  // 敵の状態もリセット
-  if(enemy){
-    enemy.hp = 0;
-    enemy.status = [];
-  }
-
-  // 表示リセット
-  startDiv.classList.remove("hidden");
-  shopDiv.classList.add("hidden");
-  battleDiv.classList.add("hidden");
-  clearScreen.classList.add("hidden");
-  gameOverScreen.classList.add("hidden");
-
-  // ログリセット
-  logDiv.innerHTML = "";
-
-  // 表示更新
-  coinText.innerText = coin;
-  stageText.innerText = "Stage " + stage;
-  drawDeck();
-  shopCards.innerHTML = "";
-  sellZone.innerHTML = "";
-  enemyArea.innerHTML = "";
-  allyArea.innerHTML = "";
+ stage = 1;
+ coin = 6;
+ enemy = null;
+ turnIndex = 0;
+ deck.forEach(c=>{c.currentHp=c.hp;c.status=[];});
+ shop = [];
+ startDiv.classList.remove("hidden");
+ shopDiv.classList.add("hidden");
+ battleDiv.classList.add("hidden");
+ clearScreen.classList.add("hidden");
+ gameOverScreen.classList.add("hidden");
+ logDiv.innerHTML="";
+ coinText.innerText = coin;
+ stageText.innerText = "Stage "+stage;
+ drawDeck();
+ shopCards.innerHTML="";
+ sellZone.innerHTML="";
+ enemyArea.innerHTML="";
+ allyArea.innerHTML="";
 }
 </script>
 </body>
