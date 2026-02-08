@@ -158,14 +158,15 @@ deckDiv.ondrop=e=>{
 
 // デッキ→売却
 sellZone.ondragover=e=>e.preventDefault();
-sellZone.ondrop=e=>{
- let i=e.dataTransfer.getData("deckIndex");
- if(i==="") return;
+sell.ondrop=(e)=>{
+ let idx=e.dataTransfer.getData("index");
+ let c=deck[idx];
 
- let c=deck[i];
  coin+=cost(c.rarity);
- deck.splice(i,1);
- refreshShop();
+ deck.splice(idx,1);
+
+ drawDeck();
+ document.getElementById("coinText").innerText=coin;
 };
 
 // ===== 購入 =====
@@ -173,30 +174,37 @@ sellZone.ondrop=e=>{
 function buy(i){
  let c=shop[i];
  let p=cost(c.rarity);
+
  if(coin<p) return;
 
  let same=deck.find(x=>x.name==c.name);
+
+ // 重複でない＆5体超えるなら禁止
  if(!same && deck.length>=5) return;
 
+ // ▼ランク5なら購入自体を拒否
+ if(same && same.rank>=5) return;
+
+ // ここで初めて支払う
  coin-=p;
 
  if(same){
-  if(same.rank<5){
    same.rank++;
    same.atk+=20;
    same.hp+=20;
-  }
  }else{
-  deck.push(copyChar(c));
+   deck.push(copyChar(c));
  }
 
- refreshShop();
+ drawDeck();
+ document.getElementById("coinText").innerText=coin;
 }
 
 function reroll(){
  if(coin<=0) return;
  coin--;
- refreshShop();
+ drawDeck();
+ document.getElementById("coinText").innerText=coin;
 }
 
 // ===== 戦闘 =====
