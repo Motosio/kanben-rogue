@@ -54,7 +54,6 @@ button{
   border:2px dashed red;
 }
 
-/* クリア画面 */
 #clearScreen{
   position:fixed;
   inset:0;
@@ -63,7 +62,6 @@ button{
   z-index:999;
 }
 
-/* 表示される時だけflexにする */
 #clearScreen:not(.hidden){
   display:flex;
   flex-direction:column;
