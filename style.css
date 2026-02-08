@@ -1,59 +1,124 @@
-body{
- background:#111;
- color:white;
- text-align:center;
+body {
+    background: #111;
+    color: white;
+    text-align: center;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
 }
 
-.hidden{display:none;}
-
-.card{
- width:120px;
- height:150px;
- background:black;
- border:2px solid white;
- border-radius:10px;
- margin:5px;
- padding:5px;
- display:inline-block;
+/* 修正の鍵：最優先で消す設定 */
+.hidden {
+    display: none !important;
 }
 
-#log{
- height:50px;
- border-bottom:1px solid white;
+/* カードのデザイン */
+.card {
+    width: 120px;
+    height: 150px;
+    background: #000;
+    border: 2px solid #fff;
+    border-radius: 10px;
+    margin: 5px;
+    padding: 8px;
+    display: inline-block;
+    vertical-align: top;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    transition: transform 0.2s;
 }
 
-#enemyArea{
- height:40vh;
- display:flex;
- justify-content:center;
- align-items:center;
+.card:hover {
+    transform: translateY(-5px);
+    border-color: #44ff44;
 }
 
-#allyArea{
- position:fixed;
- bottom:0;
- width:100%;
- display:flex;
- justify-content:center;
+/* ログ表示エリア */
+#log {
+    height: 100px;
+    background: rgba(0,0,0,0.7);
+    border-bottom: 1px solid #444;
+    overflow-y: auto;
+    font-size: 0.85em;
+    padding: 5px;
+    text-align: left;
 }
 
-button{padding:10px;}
-
-#fade{
- position:fixed;
- inset:0;
- background:black;
- opacity:0;
- transition:.3s;
- pointer-events:none;
+/* 戦闘レイアウト */
+#enemyArea {
+    height: 35vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-#clearScreen,#gameOverScreen{
- position:fixed;
- inset:0;
- background:black;
- display:flex;
- justify-content:center;
- align-items:center;
- flex-direction:column;
+#allyArea {
+    position: fixed;
+    bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* 売却ゾーン */
+#sellZone {
+    border: 2px dashed #555;
+    height: 80px;
+    margin: 15px auto;
+    width: 80%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+}
+
+#sellZone::after {
+    content: "ここにドラッグして売却";
+    color: #777;
+}
+
+/* ボタン装飾 */
+button {
+    padding: 10px 20px;
+    cursor: pointer;
+    margin: 5px;
+    background: #333;
+    color: white;
+    border: 1px solid #777;
+    border-radius: 5px;
+}
+
+button:hover {
+    background: #555;
+}
+
+.btn-battle {
+    background: #28a745;
+    font-weight: bold;
+    font-size: 1.1em;
+    border: none;
+}
+
+/* 特殊画面（オーバーレイ） */
+#clearScreen, #gameOverScreen {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.text-danger {
+    color: #ff4444;
+}
+
+#fade {
+    position: fixed;
+    inset: 0;
+    background: black;
+    opacity: 0;
+    transition: .3s;
+    pointer-events: none;
 }
