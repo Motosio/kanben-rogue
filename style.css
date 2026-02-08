@@ -54,7 +54,7 @@ button{
   border:2px dashed red;
 }
 
-#clearScreen{
+#clearScreen,#gameOverScreen{
   position:fixed;
   inset:0;
   background:black;
@@ -62,7 +62,8 @@ button{
   z-index:999;
 }
 
-#clearScreen:not(.hidden){
+#clearScreen:not(.hidden),
+#gameOverScreen:not(.hidden){
   display:flex;
   flex-direction:column;
   justify-content:center;
