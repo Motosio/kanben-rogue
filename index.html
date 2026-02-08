@@ -157,18 +157,41 @@ deckDiv.ondrop=e=>{
 };
 
 // デッキ→売却
+ 
 sellZone.ondragover=e=>e.preventDefault();
-sell.ondrop=(e)=>{
- let idx=e.dataTransfer.getData("index");
- let c=deck[idx];
+ document.addEventListener("pointerup",(e)=>{
+ if(!dragCard) return;
 
- coin+=cost(c.rarity);
- deck.splice(idx,1);
+ let deckRect=document.getElementById("deck").getBoundingClientRect();
+ let sellRect=document.getElementById("sellZone").getBoundingClientRect();
 
- drawDeck();
- document.getElementById("coinText").innerText=coin;
-};
+ let x=e.clientX;
+ let y=e.clientY;
 
+ // ショップ→デッキ
+ if(fromShop &&
+   x>deckRect.left && x<deckRect.right &&
+   y>deckRect.top && y<deckRect.bottom){
+   buy(dragIndex);
+ }
+
+ // ▼ デッキ→売却
+ if(!fromShop &&
+   x>sellRect.left && x<sellRect.right &&
+   y>sellRect.top && y<sellRect.bottom){
+
+   let c=deck[dragIndex];
+   coin+=cost(c.rarity);
+   deck.splice(dragIndex,1);
+
+   drawDeck();
+   document.getElementById("coinText").innerText=coin;
+ }
+
+ dragCard.remove();
+ dragCard=null;
+});
+ 
 // ===== 購入 =====
 
 function buy(i){
