@@ -37,8 +37,15 @@
 <button onclick="next()">次へ</button>
 </div>
 
+<!-- クリア画面 -->
 <div id="clearScreen" class="hidden">
 <h1>GAME CLEAR</h1>
+<button onclick="backToTitle()">タイトルへ戻る</button>
+</div>
+
+<!-- ゲームオーバー画面 -->
+<div id="gameOverScreen" class="hidden">
+<h1>GAME OVER</h1>
 <button onclick="backToTitle()">タイトルへ戻る</button>
 </div>
 
@@ -64,6 +71,7 @@ const startDiv=document.getElementById("start");
 const shopDiv=document.getElementById("shop");
 const battleDiv=document.getElementById("battle");
 const clearScreen=document.getElementById("clearScreen");
+const gameOverScreen=document.getElementById("gameOverScreen");
 
 const shopCards=document.getElementById("shopCards");
 const deckDiv=document.getElementById("deck");
@@ -74,6 +82,7 @@ const enemyArea=document.getElementById("enemyArea");
 
 window.onload=()=>{
  clearScreen.classList.add("hidden");
+ gameOverScreen.classList.add("hidden");
  shopDiv.classList.add("hidden");
  battleDiv.classList.add("hidden");
  startDiv.classList.remove("hidden");
@@ -162,7 +171,6 @@ sellZone.ondrop=e=>{
  let c=deck[i];
  coin+=cost(c.rarity);
  deck.splice(i,1);
-
  coinText.innerText=coin;
  drawDeck();
 };
@@ -183,7 +191,6 @@ function buy(i){
  }else deck.push(copyChar(c));
 
  shop.splice(i,1);
-
  coinText.innerText=coin;
  drawShop();
  drawDeck();
@@ -222,12 +229,14 @@ function runBattle(){
    deck[Math.random()*deck.length|0].currentHp-=enemy.atk;
  }
 
+ // ゲームオーバー
  if(deck.every(c=>c.currentHp<=0)){
-  document.getElementById("log").innerHTML="GAME OVER";
-  stage=1;coin=6;deck=[];
+  battleDiv.classList.add("hidden");
+  gameOverScreen.classList.remove("hidden");
   return;
  }
 
+ // クリア
  if(stage==10){
   battleDiv.classList.add("hidden");
   clearScreen.classList.remove("hidden");
@@ -251,6 +260,7 @@ function next(){
 
 function backToTitle(){
  clearScreen.classList.add("hidden");
+ gameOverScreen.classList.add("hidden");
  startDiv.classList.remove("hidden");
  shopDiv.classList.add("hidden");
  battleDiv.classList.add("hidden");
