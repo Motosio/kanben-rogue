@@ -319,7 +319,44 @@ function loseBattle(){
 }
 
 function backToTitle(){
- location.reload();
+  // ステータス・データ初期化
+  stage = 1;
+  coin = 6;
+  deck = [];
+  shop = [];
+  enemy = null;
+  turnIndex = 0;
+
+  // 味方の currentHp と status をリセット
+  deck.forEach(c=>{
+    c.currentHp = c.hp;
+    c.status = [];
+  });
+
+  // 敵の状態もリセット
+  if(enemy){
+    enemy.hp = 0;
+    enemy.status = [];
+  }
+
+  // 表示リセット
+  startDiv.classList.remove("hidden");
+  shopDiv.classList.add("hidden");
+  battleDiv.classList.add("hidden");
+  clearScreen.classList.add("hidden");
+  gameOverScreen.classList.add("hidden");
+
+  // ログリセット
+  logDiv.innerHTML = "";
+
+  // 表示更新
+  coinText.innerText = coin;
+  stageText.innerText = "Stage " + stage;
+  drawDeck();
+  shopCards.innerHTML = "";
+  sellZone.innerHTML = "";
+  enemyArea.innerHTML = "";
+  allyArea.innerHTML = "";
 }
 </script>
 </body>
