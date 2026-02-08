@@ -303,6 +303,13 @@ function winBattle(){
     coin+=reward;
     stage++;
     log("勝利！ +"+reward+"コイン");
+
+    // 【追加】勝利時に全キャラの体力を最大HPまでリセット
+    deck.forEach(c => {
+        c.currentHp = c.hp;
+        c.status = []; // ついでに状態異常もリセットしておくと安全です
+    });
+
     if(stage>10){
         hideAllScreens();
         clearScreen.classList.remove("hidden");
