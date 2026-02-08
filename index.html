@@ -40,7 +40,7 @@
 <!-- クリア画面 -->
 <div id="clearScreen" class="hidden">
 <h1>GAME CLEAR</h1>
-<button onclick="location.reload()">タイトルへ戻る</button>
+<button onclick="backToTitle()">タイトルへ戻る</button>
 </div>
 
 <script>
@@ -243,6 +243,22 @@ function next(){
   refreshShop();
  });
 }
+
+function backToTitle(){
+ document.getElementById("clearScreen").classList.add("hidden");
+ startDiv.classList.remove("hidden");
+ shopDiv.classList.add("hidden");
+ battleDiv.classList.add("hidden");
+
+ stage=1;
+ coin=6;
+ deck=[];
+ shop=[];
+
+ stageText.innerText="Stage 1";
+ coinText.innerText=coin;
+}
+ 
 </script>
 </body>
 </html>
