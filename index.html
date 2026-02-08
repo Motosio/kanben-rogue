@@ -37,7 +37,6 @@
 <button onclick="next()">次へ</button>
 </div>
 
-<!-- クリア画面 -->
 <div id="clearScreen" class="hidden">
 <h1>GAME CLEAR</h1>
 <button onclick="backToTitle()">タイトルへ戻る</button>
@@ -72,6 +71,13 @@ const sellZone=document.getElementById("sellZone");
 const coinText=document.getElementById("coinText");
 const stageText=document.getElementById("stageText");
 const enemyArea=document.getElementById("enemyArea");
+
+window.onload=()=>{
+ clearScreen.classList.add("hidden");
+ shopDiv.classList.add("hidden");
+ battleDiv.classList.add("hidden");
+ startDiv.classList.remove("hidden");
+};
 
 function cost(r){return r==3?2:r==4?3:4;}
 function copyChar(c){return {...c,rank:1,currentHp:c.hp};}
