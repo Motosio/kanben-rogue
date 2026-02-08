@@ -30,6 +30,21 @@ body {
     position: relative;
 }
 
+/* スキルタグ */
+.skill-tag {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background: rgba(255, 255, 0, 0.85);
+    color: black;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid #333;
+    z-index: 5;
+}
+
 /* レア度カラー */
 .rarity-3 { border-color: #007bff; box-shadow: 0 0 8px rgba(0, 123, 255, 0.6); }
 .rarity-4 { border-color: #ffd700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.7); }
@@ -74,7 +89,7 @@ body {
 
 /* ログ・バトル画面 */
 #log { height: 120px; background: rgba(0,0,0,0.8); border-bottom: 2px solid #444; overflow-y: auto; font-size: 0.85em; padding: 8px; text-align: left; }
-#enemyArea { height: 35vh; display: flex; justify-content: center; align-items: center; }
+#enemyArea { height: 35vh; display: flex; justify-content: center; align-items: center; gap: 10px; }
 #allyArea { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: center; }
 
 button { padding: 10px 20px; cursor: pointer; margin: 5px; background: #333; color: white; border: 1px solid #777; border-radius: 5px; }
