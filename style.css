@@ -5,7 +5,9 @@ body{
   text-align:center;
 }
 
-.hidden{display:none;}
+.hidden{
+  display:none;
+}
 
 .card{
   width:140px;
@@ -58,9 +60,13 @@ button{
   inset:0;
   background:black;
   color:white;
+  z-index:999;
+}
+
+/* 表示される時だけflexにする */
+#clearScreen:not(.hidden){
   display:flex;
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  z-index:999;
 }
