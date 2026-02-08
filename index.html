@@ -69,7 +69,6 @@ const baseChars=[
     {name:"ねこに",atk:0,hp:1,rarity:3},
 ];
 
-// --- 敵の定義データ ---
 const enemyTypes = {
     slime: { name: "スライム", hp: 2500, atk: 600, action: "slime_skill" },
     golem: { name: "ゴーレム", hp: 3000, atk: 200, action: "golem_skill" },
@@ -103,13 +102,17 @@ function log(t){
 }
 function cost(r){return r==3?2:r==4?3:4;}
 function copyChar(c){return {...c,rank:1,currentHp:c.hp,status:[]};}
+
 function getIcon(type){
     switch(type){
-        case"毒": return "☠️"; case"麻痺": return "⚡";
-        case"拘束": return "⛓️"; case"興奮": return "💥";
-        default: return "?";
+        case "毒": return "☠️"; 
+        case "麻痺": return "⚡";
+        case "拘束": return "⛓️"; 
+        case "興奮": return "💥";
+        default: return "❓";
     }
 }
+
 function hideAllScreens() {
     [startDiv, shopDiv, battleDiv, clearScreen, gameOverScreen].forEach(div => div.classList.add("hidden"));
 }
@@ -176,11 +179,12 @@ function drawDeck(){
         let d=document.createElement("div");
         d.className=`card rarity-${c.rarity}`;
         d.draggable=true;
+        // ショップ/デッキ画面でも状態異常（もしあれば）を表示
         let statusHtml = (c.status || []).map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
         let displayAtk = c.atk + (c.rank - 1) * 80;
         let displayHp = c.hp + (c.rank - 1) * 800;
         let currentHpShow = c.currentHp !== undefined ? c.currentHp : displayHp;
-        d.innerHTML=`${c.name} ★${c.rank}<br>⚔️${displayAtk}<br>♥${currentHpShow}/${displayHp}<br>${statusHtml}`;
+        d.innerHTML=`${c.name} ★${c.rank}<br>⚔️${displayAtk}<br>♥${currentHpShow}/${displayHp}<br><small>${statusHtml}</small>`;
         d.ondragstart=e=>e.dataTransfer.setData("deckIndex",i);
         deckDiv.appendChild(d);
     });
@@ -248,8 +252,6 @@ function battle(){
 
 function startBattle(){
     logDiv.innerHTML = "";
-    
-    // 敵の抽選
     let et;
     if (stage <= 4) et = Math.random() < 0.5 ? enemyTypes.slime : enemyTypes.golem;
     else if (stage === 5) et = enemyTypes.kurorekishi;
@@ -261,6 +263,7 @@ function startBattle(){
     deck.forEach(c => {
         let maxHp = c.hp + (c.rank - 1) * 800;
         c.currentHp = maxHp;
+        c.status = []; // バトル開始時に状態異常リセット
     });
     battlePhase = "ally"; actorIndex = 0; 
     drawEnemy();
@@ -311,7 +314,6 @@ function processEnemyAction() {
 
     let atk = calcAtk(enemy);
 
-    // 敵の種類ごとの特殊行動
     switch (enemy.action) {
         case "slime_skill":
             let t1 = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
@@ -348,7 +350,6 @@ function processEnemyAction() {
     checkBattleEnd();
 }
 
-// 共通処理
 function dealDamage(attacker, target, dmg) {
     target.currentHp -= dmg;
     log(`${attacker.name}の攻撃！ ${target.name}に ${dmg} ダメージ`);
@@ -357,11 +358,16 @@ function dealDamage(attacker, target, dmg) {
         log(`<b style='color:red;'>${target.name} が戦闘不能になった！</b>`);
     }
 }
+
+// 修正ポイント：付与した瞬間に画面を再描画するように
 function addStatus(unit, type, level, turn) {
     if (!unit.status) unit.status = [];
     unit.status.push({ type, level, turn });
     log(`${unit.name} に ${type} 付与！`);
+    drawEnemy();
+    drawAllies();
 }
+
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -405,16 +411,16 @@ function calcAtk(unit){
 
 function drawEnemy(){
     if(!enemy) return;
-    let statusHtml = enemy.status.map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
-    enemyArea.innerHTML = `<div class="card rarity-4">${enemy.name}<br>⚔️${calcAtk(enemy)}<br>♥${enemy.hp}<br>${statusHtml}</div>`;
+    let statusHtml = enemy.status.map(s=>`<span style="background:rgba(0,0,0,0.3);padding:1px;border-radius:3px;">${s.level}${getIcon(s.type)}${s.turn}</span>`).join(" ");
+    enemyArea.innerHTML = `<div class="card rarity-4">${enemy.name}<br>⚔️${calcAtk(enemy)}<br>♥${enemy.hp}<br><div>${statusHtml}</div></div>`;
 }
 
 function drawAllies(){
     allyArea.innerHTML="";
     deck.forEach(c=>{
         if(c.currentHp<=0) return;
-        let statusHtml = c.status.map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
-        allyArea.innerHTML += `<div class="card rarity-${c.rarity}">${c.name} ★${c.rank}<br>⚔️${calcAtk(c)}<br>♥${c.currentHp}<br>${statusHtml}</div>`;
+        let statusHtml = c.status.map(s=>`<span style="background:rgba(0,0,0,0.3);padding:1px;border-radius:3px;">${s.level}${getIcon(s.type)}${s.turn}</span>`).join(" ");
+        allyArea.innerHTML += `<div class="card rarity-${c.rarity}">${c.name} ★${c.rank}<br>⚔️${calcAtk(c)}<br>♥${c.currentHp}<br><div>${statusHtml}</div></div>`;
     });
 }
 
