@@ -257,6 +257,12 @@ function processAllyAction() {
         let atk = calcAtk(actor);
         enemy.hp -= atk;
         log(`${actor.name} の攻撃！ ${atk} ダメージ`);
+        
+        // 【追加】敵を倒した時のログ
+        if (enemy.hp <= 0) {
+            enemy.hp = 0;
+            log(`<b style='color:orange;'>${enemy.name} を倒した！</b>`);
+        }
     }
 
     drawEnemy();
@@ -267,11 +273,18 @@ function processAllyAction() {
 function processEnemyAction() {
     log(`--- ${enemy.name} の行動 ---`);
     let aliveTargets = deck.filter(c => c.currentHp > 0);
+    
     if (aliveTargets.length > 0) {
         let target = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
         let atk = calcAtk(enemy);
         target.currentHp -= atk;
         log(`${enemy.name} の攻撃！ ${target.name} に ${atk} ダメージ`);
+
+        // 【追加】戦闘不能判定
+        if (target.currentHp <= 0) {
+            target.currentHp = 0; // マイナスにならないように補正
+            log(`<b style='color:red;'>${target.name} が戦闘不能になった！</b>`);
+        }
     }
 
     applyStatus(enemy);
@@ -283,7 +296,7 @@ function processEnemyAction() {
     actorIndex = 0;
     checkBattleEnd();
 }
-
+    
 function checkBattleEnd() {
     if (enemy.hp <= 0) {
         log("<b style='color:yellow;'>勝利！ 画面タップで次へ</b>");
