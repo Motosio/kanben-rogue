@@ -179,7 +179,6 @@ function drawDeck(){
         let d=document.createElement("div");
         d.className=`card rarity-${c.rarity}`;
         d.draggable=true;
-        // ショップ/デッキ画面でも状態異常（もしあれば）を表示
         let statusHtml = (c.status || []).map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
         let displayAtk = c.atk + (c.rank - 1) * 80;
         let displayHp = c.hp + (c.rank - 1) * 800;
@@ -258,18 +257,17 @@ function startBattle(){
     else if (stage <= 9) et = Math.random() < 0.5 ? enemyTypes.slime : enemyTypes.golem;
     else et = enemyTypes.nouki;
 
-    enemy = { ...et, maxHp: et.hp, status: [] };
+    enemy = { ...et, hp: et.hp, status: [] };
 
     deck.forEach(c => {
         let maxHp = c.hp + (c.rank - 1) * 800;
         c.currentHp = maxHp;
-        c.status = []; // バトル開始時に状態異常リセット
+        c.status = []; 
     });
     battlePhase = "ally"; actorIndex = 0; 
     drawEnemy();
     drawAllies();
     log(`【${enemy.name}】が現れた！`);
-    log("画面タップで進行します");
 }
 
 function nextTurn(){
@@ -280,7 +278,10 @@ function nextTurn(){
 
 function processAllyAction() {
     if (actorIndex >= deck.length) {
+        // 全味方の行動が終わったら、味方の毒などのターンを更新してから敵の番へ
+        deck.forEach(c => applyStatus(c));
         battlePhase = "enemy";
+        drawAllies();
         nextTurn(); 
         return;
     }
@@ -324,7 +325,7 @@ function processEnemyAction() {
             let tGolems = shuffleArray([...aliveTargets]).slice(0, 3);
             tGolems.forEach(t => dealDamage(enemy, t, atk));
             if (Math.random() < 0.5) {
-                addStatus(enemy, "興奮", 1, 1);
+                addStatus(enemy, "興奮", 1, 2);
             }
             break;
         case "kuro_skill":
@@ -337,13 +338,14 @@ function processEnemyAction() {
             tNoukis.forEach(t => dealDamage(enemy, t, atk));
             if (Math.random() < 0.5) {
                 let tLock = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-                addStatus(tLock, "拘束", 1, 1);
+                addStatus(tLock, "拘束", 1, 2);
             }
             break;
     }
 
+    // 敵のターン終了時に自身のステータス（興奮など）を更新
     applyStatus(enemy);
-    deck.forEach(c => applyStatus(c));
+    
     drawAllies();
     drawEnemy();
     battlePhase = "ally"; actorIndex = 0;
@@ -359,7 +361,6 @@ function dealDamage(attacker, target, dmg) {
     }
 }
 
-// 修正ポイント：付与した瞬間に画面を再描画するように
 function addStatus(unit, type, level, turn) {
     if (!unit.status) unit.status = [];
     unit.status.push({ type, level, turn });
@@ -428,16 +429,16 @@ function isStunned(c){ return c.status && c.status.some(s=>s.type==="拘束"); }
 
 function applyStatus(unit){
     if(!unit || !unit.status) return;
-    let remove=[];
+    let removeIndices=[];
     unit.status.forEach((s,i)=>{
         if(s.type==="毒"){
             unit.currentHp -= s.level*100;
             log(unit.name+" は毒で "+(s.level*100)+" ダメージ");
         }
         s.turn--;
-        if(s.turn<=0) remove.push(i);
+        if(s.turn<=0) removeIndices.push(i);
     });
-    remove.reverse().forEach(i=>unit.status.splice(i,1));
+    removeIndices.reverse().forEach(i=>unit.status.splice(i,1));
 }
 </script>
 </body>
