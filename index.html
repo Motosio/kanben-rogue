@@ -182,10 +182,10 @@ function buy(i){
  // 重複でない＆5体超えるなら禁止
  if(!same && deck.length>=5) return;
 
- // ▼ランク5なら購入自体を拒否
+ // ランク5は購入不可
  if(same && same.rank>=5) return;
 
- // ここで初めて支払う
+ // 支払い
  coin-=p;
 
  if(same){
@@ -196,10 +196,14 @@ function buy(i){
    deck.push(copyChar(c));
  }
 
+ // ▼ここが追加部分
+ shop.splice(i,1);   // ショップから削除
+ drawShop();         // ショップ表示更新
+
  drawDeck();
  document.getElementById("coinText").innerText=coin;
 }
-
+ 
 function reroll(){
  if(coin<=0) return;
  coin--;
