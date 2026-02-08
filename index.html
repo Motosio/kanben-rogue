@@ -87,7 +87,7 @@ const logDiv=document.getElementById("log");
 function log(t){ logDiv.innerHTML += t+"<br>"; }
 
 function cost(r){return r==3?2:r==4?3:4;}
-function copyChar(c){return {...c,rank:1,currentHp:c.hp};}
+function copyChar(c){return {...c,rank:1,currentHp:c.hp,status:[]};}
 
 function rarityPool(){
  if(stage<=3) return [3];
@@ -109,7 +109,6 @@ function startGame(){
 function refreshShop(){
  stageText.innerText="Stage "+stage;
  coinText.innerText=coin;
-
  shop=[];
  let pool=rarityPool();
  for(let i=0;i<6;i++){
@@ -122,9 +121,8 @@ function refreshShop(){
 }
 
 //////////////////////////
-// ▼ ドラッグショップ
+// ドラッグ
 //////////////////////////
-
 function drawShop(){
  shopCards.innerHTML="";
  shop.forEach((c,i)=>{
@@ -137,20 +135,26 @@ function drawShop(){
  });
 }
 
-//////////////////////////
-// ▼ ドラッグデッキ
-//////////////////////////
-
 function drawDeck(){
  deckDiv.innerHTML="";
  deck.forEach((c,i)=>{
   let d=document.createElement("div");
   d.className="card";
-  d.draggable=true;
-  d.innerHTML=`${c.name}<br>⚔️${c.atk}<br>♥${c.currentHp??c.hp}`;
+  let statusHtml=c.status.map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
+  d.innerHTML=`${c.name}<br>⚔️${c.atk}<br>♥${c.currentHp??c.hp}<br>${statusHtml}`;
   d.ondragstart=e=>e.dataTransfer.setData("deckIndex",i);
   deckDiv.appendChild(d);
  });
+}
+
+function getIcon(type){
+ switch(type){
+  case"毒": return "☠️";
+  case"麻痺": return "⚡";
+  case"拘束": return "⛓️";
+  case"興奮": return "💥";
+  default: return "?";
+ }
 }
 
 deckDiv.ondragover=e=>e.preventDefault();
@@ -191,7 +195,7 @@ function reroll(){
 }
 
 //////////////////////////
-// ▼ 戦闘
+// 戦闘
 //////////////////////////
 
 function battle(){
@@ -203,7 +207,7 @@ function battle(){
 
 function startBattle(){
  turnIndex=0;
- enemy={name:stage%5==0?"ボス":"敵",hp:stage%5==0?6000:2500,atk:600};
+ enemy={name:stage%5==0?"ボス":"敵",hp:stage%5==0?6000:2500,atk:600,status:[]};
  deck.forEach(c=>c.currentHp=c.hp);
  drawEnemy();
  drawAllies();
@@ -211,47 +215,85 @@ function startBattle(){
 }
 
 function drawEnemy(){
+ let statusHtml=enemy.status.map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
  enemyArea.innerHTML=
- `<div class="card">${enemy.name}<br>⚔️${enemy.atk}<br>♥${enemy.hp}</div>`;
+ `<div class="card">${enemy.name}<br>⚔️${enemy.atk}<br>♥${enemy.hp}<br>${statusHtml}</div>`;
 }
 
 function drawAllies(){
  allyArea.innerHTML="";
  deck.forEach(c=>{
   if(c.currentHp<=0) return;
-  allyArea.innerHTML+=`<div class="card">${c.name}<br>♥${c.currentHp}</div>`;
+  let statusHtml=c.status.map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
+  allyArea.innerHTML+=`<div class="card">${c.name}<br>♥${c.currentHp}<br>${statusHtml}</div>`;
  });
 }
 
-// クリックで1ターン
+// 1ターン：味方全員攻撃→敵反撃→状態異常処理
 function nextTurn(){
  if(enemy.hp<=0) return;
 
- // 味方の攻撃
- let actor=deck[turnIndex%deck.length];
- if(!actor||actor.currentHp<=0){ turnIndex++; return; }
+ log("=== ターン開始 ===");
 
- enemy.hp-=actor.atk;
- log(actor.name+" のこうげき！");
+ // 味方全員攻撃
+ deck.forEach(actor=>{
+  if(actor.currentHp<=0) return;
 
- drawEnemy();
-
- if(enemy.hp<=0){ winBattle(); return; }
-
- // 敵の攻撃
- let target=deck.find(c=>c.currentHp>0);
- if(target){
-  target.currentHp-=enemy.atk;
-  log(enemy.name+" のこうげき！ "+target.name+" に "+enemy.atk+" ダメージ");
-  if(target.currentHp<=0){
-   log(target.name+" が倒れた！");
+  if(isStunned(actor)){ 
+    log(actor.name+" は拘束で動けない！");
+    return;
   }
- }
 
- if(deck.every(c=>c.currentHp<=0)){ loseBattle(); return; }
+  let atk=actor.atk;
+  actor.status.forEach(s=>{
+    if(s.type==="麻痺") atk -= s.level*30;
+    if(s.type==="興奮") atk += s.level*30;
+  });
+  atk=Math.max(0,atk);
+  enemy.hp-=atk;
+  log(actor.name+" のこうげき！ "+atk+" ダメージ");
+});
 
- drawAllies();
- turnIndex++;
+drawEnemy();
+if(enemy.hp<=0){ winBattle(); return; }
+
+// 敵の攻撃
+let target=deck.find(c=>c.currentHp>0);
+if(target){
+  let atk=enemy.atk;
+  enemy.status.forEach(s=>{
+    if(s.type==="麻痺") atk -= s.level*30;
+    if(s.type==="興奮") atk += s.level*30;
+  });
+  atk=Math.max(0,atk);
+  target.currentHp-=atk;
+  log(enemy.name+" のこうげき！ "+target.name+" に "+atk+" ダメージ");
+}
+
+drawAllies();
+
+// ターン終了時状態異常ダメージとターン減少
+applyStatus(enemy);
+deck.forEach(c=>applyStatus(c));
+
+if(deck.every(c=>c.currentHp<=0)){ loseBattle(); return; }
+
+turnIndex++;
+}
+
+function isStunned(c){ return c.status.some(s=>s.type==="拘束"); }
+
+function applyStatus(c){
+  let remove=[];
+  c.status.forEach((s,i)=>{
+    if(s.type==="毒"){
+      c.currentHp -= s.level*100;
+      log(c.name+" は毒で "+s.level*100+" ダメージ");
+    }
+    s.turn--;
+    if(s.turn<=0) remove.push(i);
+  });
+  remove.reverse().forEach(i=>c.status.splice(i,1));
 }
 
 function winBattle(){
