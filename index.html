@@ -242,11 +242,35 @@ function checkBattleEnd() {
     else if (deck.every(c => c.currentHp <= 0)) { log("<b style='color:red;'>敗北...</b>"); battlePhase = "end"; }
 }
 
+// --- 修正版：バトル終了・リセット処理 ---
 function finishBattle() {
-    if (enemy.currentHp <= 0) { coin += 5; stage++; if (stage > 10) { hideAllScreens(); clearScreen.classList.remove("hidden"); } else { hideAllScreens(); shopDiv.classList.remove("hidden"); refreshShop(); } }
-    else { hideAllScreens(); gameOverScreen.classList.remove("hidden"); }
-}
+    if (enemy.currentHp <= 0) {
+        coin += 5;
+        stage++;
 
+        // デッキの全カードをリセット（体力、攻撃力倍率、状態異常）
+        deck.forEach(c => {
+            // 最大体力を再計算して全回復
+            const maxHp = c.hp + (c.rank - 1) * 800;
+            c.currentHp = maxHp;
+            c.status = []; // 状態異常を空にする
+        });
+
+        if (stage > 10) {
+            hideAllScreens();
+            clearScreen.classList.remove("hidden");
+        } else {
+            hideAllScreens();
+            shopDiv.classList.remove("hidden");
+            // リセット後の数値を反映させるために描画を更新
+            drawDeck(); 
+            refreshShop();
+        }
+    } else {
+        hideAllScreens();
+        gameOverScreen.classList.remove("hidden");
+    }
+}
 function calcAtk(unit){
     let baseAtk = unit.atk + (unit.rank ? (unit.rank - 1) * 80 : 0);
     let mult = 1.0;
