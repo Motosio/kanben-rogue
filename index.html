@@ -61,9 +61,10 @@ const baseChars=[
 
 let stage=1,coin=6,deck=[],shop=[];
 
-const startDiv=start;
+const startDiv=document.getElementById("start");
 const shopDiv=document.getElementById("shop");
 const battleDiv=document.getElementById("battle");
+const clearScreen=document.getElementById("clearScreen");
 
 const shopCards=document.getElementById("shopCards");
 const deckDiv=document.getElementById("deck");
@@ -201,7 +202,6 @@ function runBattle(){
  let enemy={name:boss?"ボス":"雑魚",hp:boss?6000:2000,atk:boss?700:500};
 
  enemyArea.innerHTML=`<div class="card">${enemy.name}<br>⚔️${enemy.atk}<br>♥${enemy.hp}</div>`;
-
  deck.forEach(c=>c.currentHp=c.hp);
 
  while(enemy.hp>0 && deck.some(c=>c.currentHp>0)){
@@ -216,25 +216,23 @@ function runBattle(){
    deck[Math.random()*deck.length|0].currentHp-=enemy.atk;
  }
 
- let log="";
  if(deck.every(c=>c.currentHp<=0)){
-  log="GAME OVER";
+  document.getElementById("log").innerHTML="GAME OVER";
   stage=1;coin=6;deck=[];
- }else{
-
-  if(stage==10){
-   document.getElementById("clearScreen").classList.remove("hidden");
-   battleDiv.classList.add("hidden");
-   return;
-  }
-
-  let reward=stage<=3?4:stage<=7?6:9;
-  coin+=reward;
-  log=`勝利<br>コイン+${reward}<br>`;
-  stage++;
+  return;
  }
 
- document.getElementById("log").innerHTML=log;
+ if(stage==10){
+  battleDiv.classList.add("hidden");
+  clearScreen.classList.remove("hidden");
+  return;
+ }
+
+ let reward=stage<=3?4:stage<=7?6:9;
+ coin+=reward;
+ stage++;
+
+ document.getElementById("log").innerHTML=`勝利<br>コイン+${reward}`;
 }
 
 function next(){
@@ -246,7 +244,7 @@ function next(){
 }
 
 function backToTitle(){
- document.getElementById("clearScreen").classList.add("hidden");
+ clearScreen.classList.add("hidden");
  startDiv.classList.remove("hidden");
  shopDiv.classList.add("hidden");
  battleDiv.classList.add("hidden");
@@ -259,7 +257,6 @@ function backToTitle(){
  stageText.innerText="Stage 1";
  coinText.innerText=coin;
 }
- 
 </script>
 </body>
 </html>
