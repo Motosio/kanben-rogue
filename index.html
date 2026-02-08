@@ -37,6 +37,12 @@
 <button onclick="next()">次へ</button>
 </div>
 
+<!-- クリア画面 -->
+<div id="clearScreen" class="hidden">
+<h1>GAME CLEAR</h1>
+<button onclick="location.reload()">タイトルへ戻る</button>
+</div>
+
 <script>
 const baseChars=[
 {name:"スウ",atk:300,hp:3000,rarity:3},
@@ -113,7 +119,6 @@ function drawShop(){
   d.draggable=true;
 
   d.innerHTML=`★${c.rarity}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}<br>${cost(c.rarity)}c`;
-
   d.ondragstart=e=>e.dataTransfer.setData("shopIndex",i);
 
   shopCards.appendChild(d);
@@ -128,14 +133,12 @@ function drawDeck(){
   d.draggable=true;
 
   d.innerHTML=`R${c.rank}<br>${c.name}<br>⚔️${c.atk}<br>♥${c.hp}`;
-
   d.ondragstart=e=>e.dataTransfer.setData("deckIndex",i);
 
   deckDiv.appendChild(d);
  });
 }
 
-// ショップ→デッキ
 deckDiv.ondragover=e=>e.preventDefault();
 deckDiv.ondrop=e=>{
  let i=e.dataTransfer.getData("shopIndex");
@@ -143,7 +146,6 @@ deckDiv.ondrop=e=>{
  buy(Number(i));
 };
 
-// デッキ→売却
 sellZone.ondragover=e=>e.preventDefault();
 sellZone.ondrop=e=>{
  let i=e.dataTransfer.getData("deckIndex");
@@ -160,11 +162,9 @@ sellZone.ondrop=e=>{
 function buy(i){
  let c=shop[i];
  let p=cost(c.rarity);
-
  if(coin<p) return;
 
  let same=deck.find(x=>x.name==c.name);
-
  if(!same && deck.length>=5) return;
  if(same && same.rank>=5) return;
 
@@ -220,10 +220,17 @@ function runBattle(){
   log="GAME OVER";
   stage=1;coin=6;deck=[];
  }else{
+
+  if(stage==10){
+   document.getElementById("clearScreen").classList.remove("hidden");
+   battleDiv.classList.add("hidden");
+   return;
+  }
+
   let reward=stage<=3?4:stage<=7?6:9;
   coin+=reward;
   log=`勝利<br>コイン+${reward}<br>`;
-  stage=stage>=10?1:stage+1;
+  stage++;
  }
 
  document.getElementById("log").innerHTML=log;
