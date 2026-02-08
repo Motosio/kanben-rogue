@@ -67,7 +67,7 @@ const baseChars=[
 ];
 
 let stage=1,coin=6,deck=[],shop=[];
-let enemy,turnIndex=0;
+let enemy=null,turnIndex=0;
 
 const startDiv=document.getElementById("start");
 const shopDiv=document.getElementById("shop");
@@ -95,12 +95,23 @@ function rarityPool(){
  return [3,3,4,4,5];
 }
 
+// 初期化
 window.onload=()=>{
+ coin = 6;
+ stage = 1;
+ deck = [];
+ shop = [];
  startDiv.classList.remove("hidden");
+ shopDiv.classList.add("hidden");
+ battleDiv.classList.add("hidden");
+ clearScreen.classList.add("hidden");
+ gameOverScreen.classList.add("hidden");
+ coinText.innerText = coin;
+ stageText.innerText = "Stage " + stage;
 };
 
 function startGame(){
- stage=1;coin=6;deck=[];
+ stage=1; coin=6; deck=[];
  startDiv.classList.add("hidden");
  shopDiv.classList.remove("hidden");
  refreshShop();
@@ -112,17 +123,14 @@ function refreshShop(){
  shop=[];
  let pool=rarityPool();
  for(let i=0;i<6;i++){
-  let r=pool[Math.random()*pool.length|0];
+  let r=pool[Math.floor(Math.random()*pool.length)];
   let list=baseChars.filter(c=>c.rarity==r);
-  shop.push(copyChar(list[Math.random()*list.length|0]));
+  shop.push(copyChar(list[Math.floor(Math.random()*list.length)]));
  }
  drawShop();
  drawDeck();
 }
 
-//////////////////////////
-// ドラッグ
-//////////////////////////
 function drawShop(){
  shopCards.innerHTML="";
  shop.forEach((c,i)=>{
@@ -214,7 +222,6 @@ function startBattle(){
  log("戦闘開始 画面タップで進行");
 }
 
-// 麻痺・興奮を反映した攻撃力計算
 function calcAtk(unit){
  let atk = unit.atk;
  unit.status.forEach(s=>{
@@ -239,21 +246,17 @@ function drawAllies(){
  });
 }
 
-// 1ターン：味方全員攻撃→敵反撃→状態異常処理
 function nextTurn(){
- if(enemy.hp<=0) return;
+ if(!enemy || enemy.hp<=0) return;
 
  log("=== ターン開始 ===");
 
- // 味方全員攻撃
  deck.forEach(actor=>{
    if(actor.currentHp<=0) return;
-
    if(isStunned(actor)){
      log(actor.name+" は拘束で動けない！");
      return;
    }
-
    let atk = calcAtk(actor);
    enemy.hp -= atk;
    log(actor.name+" のこうげき！ "+atk+" ダメージ");
@@ -262,7 +265,6 @@ function nextTurn(){
  drawEnemy();
  if(enemy.hp<=0){ winBattle(); return; }
 
- // 敵の攻撃
  let aliveTargets = deck.filter(c=>c.currentHp>0);
  if(aliveTargets.length>0){
    let target = aliveTargets[Math.floor(Math.random()*aliveTargets.length)];
@@ -271,7 +273,6 @@ function nextTurn(){
    log(enemy.name+" のこうげき！ "+target.name+" に "+atk+" ダメージ");
  }
 
- // ターン終了時 状態異常処理
  applyStatus(enemy);
  deck.forEach(c=>applyStatus(c));
 
@@ -341,6 +342,7 @@ function backToTitle(){
  sellZone.innerHTML="";
  enemyArea.innerHTML="";
  allyArea.innerHTML="";
+ refreshShop(); // ← これで開始画面にカードが表示される
 }
 </script>
 </body>
