@@ -3,7 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <title>Card Rogue</title>
-<link rel="stylesheet" href="style.css">
+<style>
+body{
+ background:#111;
+ color:white;
+ text-align:center;
+ font-family: sans-serif;
+}
+
+.hidden{display:none !important;}
+
+.card{
+ width:120px;
+ height:150px;
+ background:black;
+ border:2px solid white;
+ border-radius:10px;
+ margin:5px;
+ padding:5px;
+ display:inline-block;
+ vertical-align: top;
+}
+
+#log{
+ height:80px;
+ border-bottom:1px solid white;
+ overflow-y: auto;
+ font-size: 0.9em;
+}
+
+#enemyArea{
+ height:30vh;
+ display:flex;
+ justify-content:center;
+ align-items:center;
+}
+
+#allyArea{
+ position:fixed;
+ bottom:20px;
+ width:100%;
+ display:flex;
+ justify-content:center;
+}
+
+button{padding:10px; cursor: pointer; margin: 5px;}
+
+#fade{
+ position:fixed;
+ inset:0;
+ background:black;
+ opacity:0;
+ transition:.3s;
+ pointer-events:none;
+}
+
+/* 修正ポイント: 初期状態を hidden にし、flexは表示時のみ適用 */
+#clearScreen, #gameOverScreen {
+ position:fixed;
+ inset:0;
+ background:rgba(0,0,0,0.9);
+ display: flex; 
+ flex-direction:column;
+ justify-content:center;
+ align-items:center;
+ z-index: 100;
+}
+</style>
 </head>
 
 <body>
@@ -12,6 +78,7 @@
 <h2 id="stageText">Stage 1</h2>
 
 <div id="start">
+<h1>Card Rogue</h1>
 <button onclick="startGame()">スタート</button>
 <button>図鑑(未実装)</button>
 <button onclick="alert('敵を倒して進むだけです')">チュートリアル</button>
@@ -22,16 +89,15 @@
 <div id="shopCards"></div>
 <button onclick="reroll()">更新(1コイン)</button>
 
-<h3>デッキ</h3>
+<h3>デッキ (最大5枚 / ドラッグで売却)</h3>
 <div id="deck"></div>
 
-<h3>売却ゾーン</h3>
-<div id="sellZone"></div>
+<h3 style="color: #ff4444;">売却ゾーン (ここにドラッグ)</h3>
+<div id="sellZone" style="border: 2px dashed #555; height: 100px; margin: 10px;"></div>
 
-<button onclick="battle()">戦闘開始</button>
+<button onclick="battle()" style="background: #44ff44; font-weight: bold;">戦闘開始</button>
 </div>
 
-<!-- 戦闘 -->
 <div id="battle" class="hidden">
 <div id="log"></div>
 <div id="enemyArea"></div>
@@ -44,7 +110,7 @@
 </div>
 
 <div id="gameOverScreen" class="hidden">
-<h1>GAME OVER</h1>
+<h1 style="color: red;">GAME OVER</h1>
 <button onclick="backToTitle()">タイトルへ戻る</button>
 </div>
 
@@ -67,7 +133,7 @@ const baseChars=[
 ];
 
 let stage=1,coin=6,deck=[],shop=[];
-let enemy=null,turnIndex=0;
+let enemy,turnIndex=0;
 
 const startDiv=document.getElementById("start");
 const shopDiv=document.getElementById("shop");
@@ -84,7 +150,10 @@ const enemyArea=document.getElementById("enemyArea");
 const allyArea=document.getElementById("allyArea");
 const logDiv=document.getElementById("log");
 
-function log(t){ logDiv.innerHTML += t+"<br>"; }
+function log(t){ 
+    logDiv.innerHTML += t+"<br>"; 
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
 
 function cost(r){return r==3?2:r==4?3:4;}
 function copyChar(c){return {...c,rank:1,currentHp:c.hp,status:[]};}
@@ -95,24 +164,21 @@ function rarityPool(){
  return [3,3,4,4,5];
 }
 
-// 初期化
 window.onload=()=>{
- coin = 6;
- stage = 1;
- deck = [];
- shop = [];
+ // 全ての画面を一度隠してからタイトルを表示
+ hideAllScreens();
  startDiv.classList.remove("hidden");
- shopDiv.classList.add("hidden");
- battleDiv.classList.add("hidden");
- clearScreen.classList.add("hidden");
- gameOverScreen.classList.add("hidden");
- coinText.innerText = coin;
- stageText.innerText = "Stage " + stage;
 };
+
+function hideAllScreens() {
+ [startDiv, shopDiv, battleDiv, clearScreen, gameOverScreen].forEach(div => {
+     div.classList.add("hidden");
+ });
+}
 
 function startGame(){
  stage=1; coin=6; deck=[];
- startDiv.classList.add("hidden");
+ hideAllScreens();
  shopDiv.classList.remove("hidden");
  refreshShop();
 }
@@ -123,9 +189,9 @@ function refreshShop(){
  shop=[];
  let pool=rarityPool();
  for(let i=0;i<6;i++){
-  let r=pool[Math.floor(Math.random()*pool.length)];
+  let r=pool[Math.random()*pool.length|0];
   let list=baseChars.filter(c=>c.rarity==r);
-  shop.push(copyChar(list[Math.floor(Math.random()*list.length)]));
+  shop.push(copyChar(list[Math.random()*list.length|0]));
  }
  drawShop();
  drawDeck();
@@ -148,7 +214,8 @@ function drawDeck(){
  deck.forEach((c,i)=>{
   let d=document.createElement("div");
   d.className="card";
-  let statusHtml=c.status.map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
+  d.draggable=true;
+  let statusHtml = (c.status || []).map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
   d.innerHTML=`${c.name}<br>⚔️${calcAtk(c)}<br>♥${c.currentHp??c.hp}<br>${statusHtml}`;
   d.ondragstart=e=>e.dataTransfer.setData("deckIndex",i);
   deckDiv.appendChild(d);
@@ -168,14 +235,14 @@ function getIcon(type){
 deckDiv.ondragover=e=>e.preventDefault();
 deckDiv.ondrop=e=>{
  let i=e.dataTransfer.getData("shopIndex");
- if(i==="") return;
+ if(i==="" || i===undefined) return;
  buy(Number(i));
 };
 
 sellZone.ondragover=e=>e.preventDefault();
 sellZone.ondrop=e=>{
  let i=e.dataTransfer.getData("deckIndex");
- if(i==="") return;
+ if(i==="" || i===undefined) return;
  let c=deck[i];
  coin+=cost(c.rarity);
  deck.splice(i,1);
@@ -202,19 +269,16 @@ function reroll(){
  refreshShop();
 }
 
-//////////////////////////
-// 戦闘
-//////////////////////////
-
 function battle(){
- if(deck.length==0) return;
- shopDiv.classList.add("hidden");
+ if(deck.length==0) { alert("デッキにカードがありません！"); return; }
+ hideAllScreens();
  battleDiv.classList.remove("hidden");
  startBattle();
 }
 
 function startBattle(){
  turnIndex=0;
+ logDiv.innerHTML = "";
  enemy={name:stage%5==0?"ボス":"敵",hp:stage%5==0?6000:2500,atk:600,status:[]};
  deck.forEach(c=>c.currentHp=c.hp);
  drawEnemy();
@@ -224,10 +288,12 @@ function startBattle(){
 
 function calcAtk(unit){
  let atk = unit.atk;
- unit.status.forEach(s=>{
-   if(s.type==="麻痺") atk -= s.level*30;
-   if(s.type==="興奮") atk += s.level*30;
- });
+ if(unit.status){
+    unit.status.forEach(s=>{
+      if(s.type==="麻痺") atk -= s.level*30;
+      if(s.type==="興奮") atk += s.level*30;
+    });
+ }
  return Math.max(0, atk);
 }
 
@@ -249,17 +315,17 @@ function drawAllies(){
 function nextTurn(){
  if(!enemy || enemy.hp<=0) return;
 
- log("=== ターン開始 ===");
+ log("=== ターン " + (turnIndex+1) + " ===");
 
  deck.forEach(actor=>{
-   if(actor.currentHp<=0) return;
+   if(actor.currentHp<=0 || enemy.hp<=0) return;
    if(isStunned(actor)){
      log(actor.name+" は拘束で動けない！");
      return;
    }
    let atk = calcAtk(actor);
    enemy.hp -= atk;
-   log(actor.name+" のこうげき！ "+atk+" ダメージ");
+   log(actor.name+" の攻撃！ "+atk+" ダメージ");
  });
 
  drawEnemy();
@@ -270,7 +336,7 @@ function nextTurn(){
    let target = aliveTargets[Math.floor(Math.random()*aliveTargets.length)];
    let atk = calcAtk(enemy);
    target.currentHp -= atk;
-   log(enemy.name+" のこうげき！ "+target.name+" に "+atk+" ダメージ");
+   log(enemy.name+" の攻撃！ "+target.name+" に "+atk+" ダメージ");
  }
 
  applyStatus(enemy);
@@ -280,14 +346,13 @@ function nextTurn(){
  drawEnemy();
 
  if(deck.every(c=>c.currentHp<=0)){ loseBattle(); return; }
-
  turnIndex++;
 }
 
-function isStunned(c){ return c.status.some(s=>s.type==="拘束"); }
+function isStunned(c){ return c.status && c.status.some(s=>s.type==="拘束"); }
 
 function applyStatus(unit){
- if(!unit) return;
+ if(!unit || !unit.status) return;
  let remove=[];
  unit.status.forEach((s,i)=>{
    if(s.type==="毒"){
@@ -304,21 +369,21 @@ function winBattle(){
  let reward=5;
  coin+=reward;
  stage++;
- log("勝利 +"+reward+"コイン");
+ log("勝利！ +"+reward+"コイン");
  if(stage>10){
-   battleDiv.classList.add("hidden");
+   hideAllScreens();
    clearScreen.classList.remove("hidden");
    return;
  }
  setTimeout(()=>{
-   battleDiv.classList.add("hidden");
+   hideAllScreens();
    shopDiv.classList.remove("hidden");
    refreshShop();
  },1000);
 }
 
 function loseBattle(){
- battleDiv.classList.add("hidden");
+ hideAllScreens();
  gameOverScreen.classList.remove("hidden");
 }
 
@@ -327,13 +392,12 @@ function backToTitle(){
  coin = 6;
  enemy = null;
  turnIndex = 0;
- deck.forEach(c=>{c.currentHp=c.hp;c.status=[];});
+ deck = [];
  shop = [];
+ 
+ hideAllScreens();
  startDiv.classList.remove("hidden");
- shopDiv.classList.add("hidden");
- battleDiv.classList.add("hidden");
- clearScreen.classList.add("hidden");
- gameOverScreen.classList.add("hidden");
+ 
  logDiv.innerHTML="";
  coinText.innerText = coin;
  stageText.innerText = "Stage "+stage;
@@ -342,7 +406,6 @@ function backToTitle(){
  sellZone.innerHTML="";
  enemyArea.innerHTML="";
  allyArea.innerHTML="";
- refreshShop(); // ← これで開始画面にカードが表示される
 }
 </script>
 </body>
