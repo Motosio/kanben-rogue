@@ -1,71 +1,59 @@
 body{
-  background:#111;
-  color:white;
-  font-family:sans-serif;
-  text-align:center;
+ background:#111;
+ color:white;
+ text-align:center;
 }
 
-.hidden{
-  display:none;
-}
+.hidden{display:none;}
 
 .card{
-  width:140px;
-  height:180px;
-  background:black;
-  color:white;
-  border:3px solid blue;
-  border-radius:10px;
-  margin:5px;
-  padding:5px;
-  display:inline-block;
-  user-select:none;
+ width:120px;
+ height:150px;
+ background:black;
+ border:2px solid white;
+ border-radius:10px;
+ margin:5px;
+ padding:5px;
+ display:inline-block;
 }
 
-.r4{border-color:gold;}
-
-.r5{
-  border:3px solid;
-  border-image:linear-gradient(45deg,lavender,aqua,white) 1;
+#log{
+ height:50px;
+ border-bottom:1px solid white;
 }
 
-button{
-  padding:10px;
-  margin:5px;
+#enemyArea{
+ height:40vh;
+ display:flex;
+ justify-content:center;
+ align-items:center;
 }
+
+#allyArea{
+ position:fixed;
+ bottom:0;
+ width:100%;
+ display:flex;
+ justify-content:center;
+}
+
+button{padding:10px;}
 
 #fade{
-  position:fixed;
-  inset:0;
-  background:black;
-  opacity:0;
-  pointer-events:none;
-  transition:0.4s;
-}
-
-#deck{
-  min-height:200px;
-  border:2px dashed gray;
-  padding:10px;
-}
-
-#sellZone{
-  height:80px;
-  border:2px dashed red;
+ position:fixed;
+ inset:0;
+ background:black;
+ opacity:0;
+ transition:.3s;
+ pointer-events:none;
 }
 
 #clearScreen,#gameOverScreen{
-  position:fixed;
-  inset:0;
-  background:black;
-  color:white;
-  z-index:999;
-}
-
-#clearScreen:not(.hidden),
-#gameOverScreen:not(.hidden){
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
+ position:fixed;
+ inset:0;
+ background:black;
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ flex-direction:column;
 }
