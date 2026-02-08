@@ -11,7 +11,7 @@ body{
   width:140px;
   height:180px;
   background:black;
-  color:white; /* ←これが重要 */
+  color:white;
   border:3px solid blue;
   border-radius:10px;
   margin:5px;
@@ -20,9 +20,7 @@ body{
   user-select:none;
 }
 
-.r4{
-  border-color:gold;
-}
+.r4{border-color:gold;}
 
 .r5{
   border:3px solid;
@@ -52,4 +50,17 @@ button{
 #sellZone{
   height:80px;
   border:2px dashed red;
+}
+
+/* クリア画面 */
+#clearScreen{
+  position:fixed;
+  inset:0;
+  background:black;
+  color:white;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  z-index:999;
 }
