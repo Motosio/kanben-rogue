@@ -180,10 +180,10 @@ function drawDeck(){
         d.className=`card rarity-${c.rarity}`;
         d.draggable=true;
         let statusHtml = (c.status || []).map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
-        let displayAtk = c.atk + (c.rank - 1) * 80;
-        let displayHp = c.hp + (c.rank - 1) * 800;
-        let currentHpShow = c.currentHp !== undefined ? c.currentHp : displayHp;
-        d.innerHTML=`${c.name} ★${c.rank}<br>⚔️${displayAtk}<br>♥${currentHpShow}/${displayHp}<br><small>${statusHtml}</small>`;
+        let displayAtk = calcAtk(c); // 表示用攻撃力も計算を通す
+        let displayMaxHp = c.hp + (c.rank - 1) * 800;
+        let currentHpShow = c.currentHp !== undefined ? c.currentHp : displayMaxHp;
+        d.innerHTML=`${c.name} ★${c.rank}<br>⚔️${displayAtk}<br>♥${currentHpShow}/${displayMaxHp}<br><small>${statusHtml}</small>`;
         d.ondragstart=e=>e.dataTransfer.setData("deckIndex",i);
         deckDiv.appendChild(d);
     });
@@ -278,7 +278,6 @@ function nextTurn(){
 
 function processAllyAction() {
     if (actorIndex >= deck.length) {
-        // 全味方の行動が終わったら、味方の毒などのターンを更新してから敵の番へ
         deck.forEach(c => applyStatus(c));
         battlePhase = "enemy";
         drawAllies();
@@ -320,6 +319,7 @@ function processEnemyAction() {
             let t1 = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
             dealDamage(enemy, t1, atk);
             addStatus(t1, "毒", 1, 2);
+            addStatus(t1, "麻痺", 1, 2); // スライムに麻痺攻撃を追加
             break;
         case "golem_skill":
             let tGolems = shuffleArray([...aliveTargets]).slice(0, 3);
@@ -343,9 +343,7 @@ function processEnemyAction() {
             break;
     }
 
-    // 敵のターン終了時に自身のステータス（興奮など）を更新
     applyStatus(enemy);
-    
     drawAllies();
     drawEnemy();
     battlePhase = "ally"; actorIndex = 0;
@@ -399,15 +397,19 @@ function finishBattle() {
     }
 }
 
+// --- ダメージ計算（倍率方式に変更済み） ---
 function calcAtk(unit){
     let baseAtk = unit.atk;
     if(unit.rank) baseAtk += (unit.rank - 1) * 80;
-    let atk = baseAtk;
+    
+    let multiplier = 1.0; 
     if(unit.status) unit.status.forEach(s=>{
-        if(s.type==="麻痺") atk -= s.level*30;
-        if(s.type==="興奮") atk += s.level*30;
+        if(s.type === "麻痺") multiplier -= 0.3; // 1つにつき30%ダウン
+        if(s.type === "興奮") multiplier += 0.5; // 1つにつき50%アップ
     });
-    return Math.max(0, atk);
+    
+    multiplier = Math.max(0.1, multiplier); // 最低10%保証
+    return Math.floor(baseAtk * multiplier);
 }
 
 function drawEnemy(){
