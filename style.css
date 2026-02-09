@@ -10,6 +10,7 @@ body {
 
 .hidden { display: none !important; }
 
+/* カード本体 */
 .card {
     position: relative;
     width: 110px;
@@ -22,20 +23,32 @@ body {
     vertical-align: top;
     box-shadow: 0 4px 8px rgba(0,0,0,0.5);
     transition: transform 0.2s;
-    overflow: visible; /* ダメージ数字が外に出るように */
+    overflow: visible; /* ダメージ数字を見せるため */
 }
 
+/* 画像スペース */
 .card-img-space {
     position: absolute;
     top: 20px;
     left: 10px;
     width: 90px;
     height: 70px;
-    background: rgba(255, 255, 255, 0.03);
+    background: #333;
     border-radius: 5px;
     z-index: 1;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
+.card-img-space img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 属性丸(左上) */
 .elem-circle {
     position: absolute;
     top: 5px;
@@ -49,13 +62,15 @@ body {
     font-size: 12px;
     font-weight: bold;
     z-index: 10;
+    border: 1px solid rgba(255,255,255,0.3);
 }
-.elem-火 { background: #ff4400; }
-.elem-水 { background: #0088ff; }
-.elem-草 { background: #22cc44; }
-.elem-光 { background: #ffffaa; color: #555; }
-.elem-闇 { background: #8800ff; }
+.elem-火 { background: #ff4400; box-shadow: 0 0 5px #ff4400; }
+.elem-水 { background: #0088ff; box-shadow: 0 0 5px #0088ff; }
+.elem-草 { background: #22cc44; box-shadow: 0 0 5px #22cc44; }
+.elem-光 { background: #ffffaa; color: #555; box-shadow: 0 0 5px #ffffaa; }
+.elem-闇 { background: #8800ff; box-shadow: 0 0 5px #8800ff; }
 
+/* レア度星(右上) */
 .rarity-stars {
     position: absolute;
     top: 5px;
@@ -65,6 +80,7 @@ body {
     z-index: 10;
 }
 
+/* 名前(中央下) */
 .card-name {
     position: absolute;
     bottom: 28px;
@@ -72,11 +88,13 @@ body {
     font-size: 10px;
     font-weight: bold;
     background: rgba(0,0,0,0.7);
+    padding: 2px 0;
     z-index: 5;
 }
 
-.card-atk { position: absolute; bottom: 5px; left: 8px; font-size: 12px; color: #ffa; z-index: 10; }
-.card-hp { position: absolute; bottom: 5px; right: 8px; font-size: 12px; color: #f66; z-index: 10; }
+/* 攻撃力・体力 */
+.card-atk { position: absolute; bottom: 5px; left: 8px; font-size: 12px; color: #ffa; font-weight: bold; z-index: 10; }
+.card-hp { position: absolute; bottom: 5px; right: 8px; font-size: 12px; color: #f66; font-weight: bold; z-index: 10; }
 
 .skill-tag {
     position: absolute;
@@ -87,6 +105,7 @@ body {
     font-size: 8px;
     padding: 1px 3px;
     border-radius: 3px;
+    font-weight: bold;
     z-index: 10;
 }
 
@@ -100,13 +119,14 @@ body {
     z-index: 10;
 }
 
+/* レア度別カラー */
 .rarity-3 { border-color: #007bff; }
 .rarity-4 { border-color: #ffd700; }
 .rarity-5 { border-color: #fff; animation: shine 2s linear infinite; }
 
 @keyframes shine {
     0%, 100% { filter: brightness(1); }
-    50% { filter: brightness(1.5); }
+    50% { filter: brightness(1.4); }
 }
 
 /* 被ダメ演出 */
@@ -125,6 +145,7 @@ body {
     80% { transform: translate(8px, 4px); }
 }
 
+/* ダメージポップアップ */
 .dmg-popup {
     position: absolute;
     top: 40%;
@@ -145,6 +166,7 @@ body {
     100% { opacity: 0; transform: translate(-50%, -150%) scale(1.2); }
 }
 
+/* レイアウト */
 #deck { border: 2px solid #444; background: #1a1a1a; min-height: 170px; margin: 5px auto; width: 95%; display: flex; justify-content: center; align-items: center; border-radius: 15px; flex-wrap: wrap; }
 #sellZone { border: 2px dashed #ff4444; height: 50px; margin: 5px auto; width: 80%; display: flex; justify-content: center; align-items: center; border-radius: 10px; background: rgba(255, 68, 68, 0.1); }
 #log { height: 90px; background: rgba(0,0,0,0.8); border-bottom: 2px solid #444; overflow-y: auto; font-size: 0.8em; padding: 5px; text-align: left; }
