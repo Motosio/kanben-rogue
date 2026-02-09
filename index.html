@@ -50,36 +50,61 @@
 </div>
 
 <script>
-// --- 基本データ ---
-const baseChars=[
-    {name:"スウ",atk:300,hp:3000,rarity:3,elem:"光", skill:{interval:3, action:(a,ts)=>ts.forEach(t=>addStatus(t,"麻痺",2,2))}},
-    {name:"レオナ",atk:400,hp:5000,rarity:4,elem:"草"},
-    {name:"コウ",atk:600,hp:7000,rarity:5,elem:"火"},
-    {name:"キョウ",atk:200,hp:2000,rarity:3,elem:"闇"},
-    {name:"カフ",atk:500,hp:4000,rarity:4,elem:"水"},
-    {name:"イグノア",atk:200,hp:2000,rarity:3,elem:"光"},
-    {name:"アレクサンダー",atk:999,hp:9999,rarity:5,elem:"火"},
-    {name:"スフェリコン",atk:400,hp:4000,rarity:4,elem:"火"},
-    {name:"蜜夜",atk:400,hp:4000,rarity:4,elem:"草"},
-    {name:"メビウス",atk:400,hp:4000,rarity:4,elem:"火"},
-    {name:"ローマン",atk:300,hp:3000,rarity:3,elem:"水"},
-    {name:"ゴマ",atk:1,hp:3,rarity:3,elem:"闇"},
-    {name:"ココねこ",atk:999,hp:9999,rarity:5,elem:"闇"},
-    {name:"ぜるぜるヤドカリ",atk:436,hp:9999,rarity:4,elem:"水"},
-    {name:"最強無敵オレオピーマン",atk:9999,hp:99999,rarity:5,elem:"草"},
-    {name:"ねこに",atk:0,hp:1,rarity:3,elem:"光"},
+// --- 新キャラクターデータ ---
+const baseChars = [
+    { name: "喜ヶ楽 スウ", rarity: 3, elem: "光", atk: 300, hp: 3000, 
+      skill: { timing: "attack", interval: 3, action: (a, ts, ds) => {
+          ts.forEach(t => addStatus(t, "麻痺", 1, 2));
+      }}},
+    { name: "フューム･カタラグーン", rarity: 5, elem: "闇", atk: 500, hp: 5500, 
+      skill: { timing: "start", action: (a, ts, ds) => {
+          addStatus(a, "興奮", 3, 3);
+          ts.forEach(t => addStatus(t, "拘束", 1, 1));
+      }}},
+    { name: "レオナ･フィボナッチ", rarity: 4, elem: "草", atk: 400, hp: 5000, 
+      skill: { timing: "attack", interval: 3, action: (a, ts, ds) => {
+          ds.forEach(d => {
+              const maxHp = d.hp + (d.rank - 1) * 800;
+              d.currentHp = Math.min(maxHp, d.currentHp + 1000);
+          });
+      }}},
+    { name: "葛飾 コウ", rarity: 5, elem: "火", atk: 700, hp: 5000, 
+      skill: { timing: "attack", interval: 2, action: (a, ts, ds) => {
+          if (Math.random() < 0.75) addStatus(a, "興奮", 3, 3);
+      }}},
+    { name: "役握 キョウ", rarity: 3, elem: "闇", atk: 200, hp: 2000, 
+      skill: { timing: "attack", interval: 2, action: (a, ts, ds) => {
+          let target = ts[Math.floor(Math.random() * ts.length)];
+          addStatus(target, "麻痺", 1, 2);
+      }}},
+    { name: "リゲル", rarity: 3, elem: "水", atk: 300, hp: 3000, 
+      skill: { timing: "start", action: (a, ts, ds) => {
+          let target = ds[Math.floor(Math.random() * ds.length)];
+          target.currentHp = Math.max(1, target.currentHp - 500);
+          ds.forEach(d => addStatus(d, "興奮", 2, 2));
+      }}},
+    { name: "加西 カフ", rarity: 4, elem: "水", atk: 400, hp: 5000, 
+      skill: { timing: "attack", interval: 3, action: (a, ts, ds) => {
+          let target = ts[Math.floor(Math.random() * ts.length)];
+          addStatus(target, "拘束", 1, 2);
+      }}},
+    { name: "イグノア･フラクタル", rarity: 3, elem: "光", atk: 100, hp: 2000, 
+      skill: { timing: "start", action: (a, ts, ds) => {
+          ds.forEach(d => addStatus(d, "興奮", 2, 5));
+      }}},
+    { name: "リーヴ･アレクサンダー", rarity: 5, elem: "火", atk: 999, hp: 9999 }
 ];
 
 const enemyTypes = {
-    slime: { name: "スライム", hp: 2500, atk: 300, elem: "水", action: "slime_skill" },
-    golem: { name: "ゴーレム", hp: 3000, atk: 100, elem: "草", action: "golem_skill" },
-    kurorekishi: { name: "黒歴史", hp: 10000, atk: 100, elem: "闇", action: "kuro_skill" },
-    nouki: { name: "納期", hp: 15000, atk: 600, elem: "闇", action: "nouki_skill" }
+    slime: { name: "スライム", hp: 2500, atk: 600, elem: "水", action: "slime_skill" },
+    golem: { name: "ゴーレム", hp: 3000, atk: 200, elem: "草", action: "golem_skill" },
+    kurorekishi: { name: "黒歴史", hp: 6000, atk: 100, elem: "闇", action: "kuro_skill" },
+    nouki: { name: "納期", hp: 7000, atk: 600, elem: "闇", action: "nouki_skill" }
 };
 
 let stage=1, coin=6, deck=[], shop=[];
 let enemies = [], battlePhase = "idle", actorIndex = 0; 
-let nextEnemies = []; // 先読み用の配列
+let nextEnemies = [];
 
 const startDiv=document.getElementById("start"), shopDiv=document.getElementById("shop"), battleDiv=document.getElementById("battle");
 const clearScreen=document.getElementById("clearScreen"), gameOverScreen=document.getElementById("gameOverScreen");
@@ -100,7 +125,6 @@ function getIcon(type){
 }
 function hideAllScreens() { [startDiv, shopDiv, battleDiv, clearScreen, gameOverScreen].forEach(div => div.classList.add("hidden")); }
 
-// --- 属性相性計算 ---
 function getAffinity(aElem, tElem) {
     if (aElem === "火" && tElem === "草") return 1.5;
     if (aElem === "草" && tElem === "水") return 1.5;
@@ -112,13 +136,12 @@ function getAffinity(aElem, tElem) {
     return 1.0;
 }
 
-// --- カードHTML生成 ---
 function createCardHtml(c, isEnemy = false) {
     const stars = "★".repeat(c.rarity);
     const maxHp = isEnemy ? c.hp : (c.hp + (c.rank - 1) * 800);
     const currentHp = c.currentHp !== undefined ? c.currentHp : maxHp;
     const atk = calcAtk(c);
-    const skillInfo = c.skill ? `<div class="skill-tag">${c.skillCount || 0}/${c.skill.interval}</div>` : "";
+    const skillInfo = (c.skill && c.skill.timing === "attack") ? `<div class="skill-tag">${c.skillCount || 0}/${c.skill.interval}</div>` : "";
     const statusIcons = (c.status || []).map(s => `<span title="${s.type}">${getIcon(s.type)}${s.turn}</span>`).join("");
 
     return `
@@ -143,15 +166,12 @@ function backToTitle(){
     drawDeck(); shopCards.innerHTML="";
 }
 
-// 次の敵を生成する共通ロジック
 function generateNextEnemies() {
-    let pool = [];
-    let count = 1;
+    let pool = []; let count = 1;
     if (stage <= 4) { count = 2; pool = [enemyTypes.slime, enemyTypes.golem]; }
     else if (stage === 5) { count = 1; pool = [enemyTypes.kurorekishi]; }
     else if (stage <= 9) { count = 3; pool = [enemyTypes.slime, enemyTypes.golem]; }
     else { count = 1; pool = [enemyTypes.nouki]; }
-
     let result = [];
     for(let i=0; i<count; i++) {
         let et = pool[Math.floor(Math.random()*pool.length)];
@@ -161,15 +181,10 @@ function generateNextEnemies() {
 }
 
 function refreshShop(){
-    stageText.innerText="Stage "+stage; 
-    coinText.innerText=coin; 
-    shop=[];
-    
-    // 次の敵を決定して表示
+    stageText.innerText="Stage "+stage; coinText.innerText=coin; shop=[];
     nextEnemies = generateNextEnemies();
     const enemyNames = nextEnemies.map(e => `${e.name}(${e.elem})`).join(", ");
     nextEnemyInfo.innerText = `次: ${enemyNames}`;
-
     let pool= (stage<=3) ? [3] : (stage<=6) ? [3,4] : [3,3,4,4,5];
     for(let i=0;i<6;i++){
         let r=pool[Math.random()*pool.length|0];
@@ -233,16 +248,23 @@ function battle(){ if(deck.length>0) { hideAllScreens(); battleDiv.classList.rem
 
 function startBattle(){
     logDiv.innerHTML = "";
-    // refreshShopで決めておいた敵をセット
     enemies = JSON.parse(JSON.stringify(nextEnemies));
-
     deck.forEach(c => { 
         c.currentHp = c.hp + (c.rank - 1) * 800; 
         c.status = []; 
+        c.skillCount = 0;
+    });
+
+    // バトル開始時スキルの発動
+    deck.forEach(c => {
+        if(c.skill && c.skill.timing === "start") {
+            log(`<b style='color:#00ffff;'>${c.name}がスキルを発動！</b>`);
+            c.skill.action(c, enemies, deck);
+        }
     });
 
     battlePhase = "ally"; actorIndex = 0; drawEnemy(); drawAllies();
-    log(`Stage ${stage}: ${enemies.length}体の敵が現れた！`);
+    log(`Stage ${stage}: 戦闘開始！`);
 }
 
 function nextTurn(){
@@ -254,8 +276,7 @@ function nextTurn(){
 function processAllyAction() {
     if (actorIndex >= deck.length) { 
         deck.forEach(c => applyStatus(c)); 
-        battlePhase = "enemy"; 
-        actorIndex = 0;
+        battlePhase = "enemy"; actorIndex = 0;
         drawAllies(); nextTurn(); return; 
     }
     let actor = deck[actorIndex];
@@ -263,17 +284,17 @@ function processAllyAction() {
 
     log(`--- ${actor.name} の行動 ---`);
     if (isStunned(actor)) {
-        log(actor.name + " は拘束で動けない！");
+        log(actor.name + " は拘束されている！");
     } else {
         let aliveEnemies = enemies.filter(e => e.currentHp > 0);
         if (aliveEnemies.length > 0) {
             let target = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
             
-            if (actor.skill) {
+            if (actor.skill && actor.skill.timing === "attack") {
                 actor.skillCount++;
                 if (actor.skillCount >= actor.skill.interval) {
-                    log(`<b style='color:#ffff00;'>${actor.name} がスキルを発動した！</b>`);
-                    actor.skill.action(actor, aliveEnemies);
+                    log(`<b style='color:#ffff00;'>${actor.name}がスキルを発動！</b>`);
+                    actor.skill.action(actor, aliveEnemies, deck);
                     actor.skillCount = 0;
                 }
             }
@@ -321,26 +342,9 @@ function processEnemyAction() {
 function dealDamage(attacker, target, baseDmg) {
     const affinity = getAffinity(attacker.elem, target.elem);
     const finalDmg = Math.floor(baseDmg * affinity);
-    
     target.currentHp = Math.max(0, target.currentHp - finalDmg);
-    
     let logColor = affinity > 1.0 ? "#ffcc00" : (affinity < 1.0 ? "#aaaaaa" : "white");
-    log(`${attacker.name}の攻撃！ ${target.name}に <span style="color:${logColor}">${finalDmg}</span> ダメージ` + (affinity > 1.0 ? " (効果絶大！)" : ""));
-    
-    let targetEl;
-    if (enemies.includes(target)) {
-        let aliveIndex = enemies.filter(e => e.currentHp > 0 || e === target).indexOf(target);
-        targetEl = enemyArea.querySelectorAll('.card')[aliveIndex];
-    } else {
-        let aliveIndex = deck.filter(c => c.currentHp > 0 || c === target).indexOf(target);
-        targetEl = allyArea.querySelectorAll('.card')[aliveIndex];
-    }
-
-    if (targetEl) { 
-        targetEl.classList.add('dmg-flash'); 
-        setTimeout(() => targetEl.classList.remove('dmg-flash'), 400); 
-    }
-    if (target.currentHp <= 0) log(`<b style='color:red;'>${target.name} が戦闘不能！</b>`);
+    log(`${attacker.name}の攻撃！ ${target.name}に <span style="color:${logColor}">${finalDmg}</span> ダメージ`);
     drawEnemy(); drawAllies();
 }
 
@@ -354,39 +358,17 @@ function addStatus(unit, type, level, turn) {
 function shuffleArray(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 function checkBattleEnd() {
-    if (enemies.every(e => e.currentHp <= 0)) { 
-        log("<b style='color:yellow;'>勝利！ タップで次へ</b>"); 
-        battlePhase = "end"; 
-    }
-    else if (deck.every(c => c.currentHp <= 0)) { 
-        log("<b style='color:red;'>敗北...</b>"); 
-        battlePhase = "end"; 
-    }
+    if (enemies.every(e => e.currentHp <= 0)) { log("<b style='color:yellow;'>勝利！ タップで次へ</b>"); battlePhase = "end"; }
+    else if (deck.every(c => c.currentHp <= 0)) { log("<b style='color:red;'>敗北...</b>"); battlePhase = "end"; }
 }
 
 function finishBattle() {
     if (enemies.every(e => e.currentHp <= 0)) {
-        coin += 5;
-        stage++;
-        deck.forEach(c => {
-            const maxHp = c.hp + (c.rank - 1) * 800;
-            c.currentHp = maxHp;
-            c.status = [];
-        });
-
-        if (stage > 10) {
-            hideAllScreens();
-            clearScreen.classList.remove("hidden");
-        } else {
-            hideAllScreens();
-            shopDiv.classList.remove("hidden");
-            drawDeck(); 
-            refreshShop();
-        }
-    } else {
-        hideAllScreens();
-        gameOverScreen.classList.remove("hidden");
-    }
+        coin += 5; stage++;
+        deck.forEach(c => { c.currentHp = c.hp + (c.rank - 1) * 800; c.status = []; });
+        if (stage > 10) { hideAllScreens(); clearScreen.classList.remove("hidden"); }
+        else { hideAllScreens(); shopDiv.classList.remove("hidden"); drawDeck(); refreshShop(); }
+    } else { hideAllScreens(); gameOverScreen.classList.remove("hidden"); }
 }
 
 function calcAtk(unit){
