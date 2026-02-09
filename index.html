@@ -50,7 +50,6 @@
 
 <script>
 // --- キャラクターデータ ---
-// ※画像が出ない場合は、この name とファイル名を完全に一致させてください
 const baseChars = [
     { name: "喜ヶ楽 スウ", rarity: 3, elem: "光", atk: 300, hp: 3000, 
       skill: { timing: "attack", interval: 3, action: (a, ts, ds) => {
@@ -105,17 +104,30 @@ const baseChars = [
     { name: "リーヴ･アレクサンダー", rarity: 5, elem: "火", atk: 999, hp: 9999 }
 ];
 
+// --- 敵データ（強化版） ---
 const enemyTypes = {
-    slime: { name: "スライム", hp: 2500, atk: 600, elem: "水" },
-    golem: { name: "ゴーレム", hp: 3000, atk: 200, elem: "草" },
-    kurorekishi: { name: "黒歴史", hp: 6000, atk: 100, elem: "闇" },
-    nouki: { name: "納期", hp: 7000, atk: 600, elem: "闇" }
+    slime: { 
+        name: "スライム", hp: 3500, atk: 700, elem: "水", 
+        skill: { name: "増殖", interval: 2, action: (e) => {
+            e.currentHp = Math.min(e.hp, e.currentHp + 800);
+            log("スライムは増殖して回復した！");
+        }}
+    },
+    golem: { 
+        name: "ゴーレム", hp: 6000, atk: 400, elem: "草",
+        skill: { name: "硬化", interval: 3, action: (e) => {
+            addStatus(e, "興奮", 1, 2); // 攻撃アップ
+            log("ゴーレムの体が硬質化した！");
+        }}
+    },
+    kurorekishi: { name: "黒歴史", hp: 8000, atk: 200, elem: "闇" },
+    nouki: { name: "納期", hp: 12000, atk: 800, elem: "闇" }
 };
 
 // --- グローバル変数 ---
 let stage=1, coin=6, deck=[], shop=[];
 let enemies = [], nextEnemies = [];
-let battleQueue = []; // 行動予約リスト
+let battleQueue = [];
 
 const ui_start = document.getElementById("start");
 const ui_shop = document.getElementById("shop");
@@ -162,17 +174,17 @@ function getAffinity(aElem, tElem) {
 }
 
 function createCardHtml(c, isEnemy = false) {
-    const stars = "★".repeat(c.rarity);
+    const stars = "★".repeat(c.rarity || 3);
     const maxHp = isEnemy ? c.hp : (c.hp + (c.rank - 1) * 800);
     const currentHp = Math.ceil(c.currentHp !== undefined ? c.currentHp : maxHp);
     const atk = calcAtk(c);
-    const skillInfo = (c.skill && c.skill.timing === "attack") ? `<div class="skill-tag">${c.skillCount || 0}/${c.skill.interval}</div>` : "";
+    const skillInfo = (c.skill && c.skill.interval) ? `<div class="skill-tag">${c.skillCount || 0}/${c.skill.interval}</div>` : "";
     const statusIcons = (c.status || []).map(s => `<span>${getIcon(s.type)}${s.turn}</span>`).join("");
     const imgPath = `img/${c.name}.png`;
 
     return `
         ${skillInfo}
-        <div class="elem-circle elem-${c.elem}">${isEnemy ? "" : c.rank}</div>
+        <div class="elem-circle elem-${c.elem}">${isEnemy ? "" : (c.rank || 1)}</div>
         <div class="rarity-stars">${stars}</div>
         <div class="card-status-icons">${statusIcons}</div>
         <div class="card-img-space">
@@ -192,13 +204,13 @@ function backToTitle(){
 
 function generateNextEnemies() {
     let pool = [enemyTypes.slime, enemyTypes.golem];
-    let count = (stage <= 3) ? 2 : (stage <= 6) ? 3 : 4;
+    let count = Math.min(4, Math.floor(stage / 2) + 1);
     let result = [];
-    if(stage===5) result.push({...enemyTypes.kurorekishi, currentHp: 6000, status: []});
-    if(stage===10) result.push({...enemyTypes.nouki, currentHp: 7000, status: []});
+    if(stage===5) result.push({...enemyTypes.kurorekishi, currentHp: enemyTypes.kurorekishi.hp, status: [], skillCount: 0});
+    if(stage===10) result.push({...enemyTypes.nouki, currentHp: enemyTypes.nouki.hp, status: [], skillCount: 0});
     while(result.length < count) {
         let et = pool[Math.floor(Math.random()*pool.length)];
-        result.push({ ...et, currentHp: et.hp, status: [] });
+        result.push({ ...et, currentHp: et.hp, status: [], skillCount: 0 });
     }
     return result;
 }
@@ -259,7 +271,6 @@ function buy(i){
 
 function reroll(){ if(coin>0) { coin--; refreshShop(); } }
 
-// --- バトルロジック ---
 function battle(){ 
     if(deck.length>0) { 
         hideAllScreens(); 
@@ -269,7 +280,7 @@ function battle(){
 }
 
 function startBattle(){
-    logDiv.innerHTML = "<b>--- 戦闘開始 (画面をタップ) ---</b><br>";
+    logDiv.innerHTML = "<b>--- 戦闘開始 ---</b><br>";
     battleQueue = [];
     enemies = JSON.parse(JSON.stringify(nextEnemies));
     deck.forEach(c => { 
@@ -278,7 +289,6 @@ function startBattle(){
         c.skillCount = 0; 
     });
 
-    // 開幕スキル
     deck.forEach(c => {
         if(c.skill && c.skill.timing === "start") {
             battleQueue.push({ type: "skill", actor: c });
@@ -294,7 +304,6 @@ function prepareTurn() {
     let aliveEnemies = enemies.filter(e => e.currentHp > 0);
     if (aliveEnemies.length === 0 || aliveAllies.length === 0) return;
 
-    // 味方 -> 敵の順に行動予約
     aliveAllies.forEach(c => battleQueue.push({ type: "action", actor: c, side: "ally" }));
     aliveEnemies.forEach(e => battleQueue.push({ type: "action", actor: e, side: "enemy" }));
 }
@@ -304,6 +313,8 @@ function nextTurn(){
         if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) {
             finishBattle();
         } else {
+            // ターン終了時の状態異常更新
+            [...deck, ...enemies].forEach(u => applyStatus(u));
             prepareTurn();
             if(battleQueue.length > 0) nextTurn();
         }
@@ -325,12 +336,22 @@ function nextTurn(){
             nextTurn(); return;
         }
 
+        // 敵のスキル判定
+        if (task.side === "enemy" && actor.skill) {
+            actor.skillCount++;
+            if (actor.skillCount >= actor.skill.interval) {
+                actor.skill.action(actor);
+                actor.skillCount = 0;
+                drawEnemy(); drawAllies();
+            }
+        }
+
         let targets = (task.side === "ally") ? enemies.filter(e => e.currentHp > 0) : deck.filter(c => c.currentHp > 0);
         if (targets.length === 0) { nextTurn(); return; }
 
         let target = targets[Math.floor(Math.random() * targets.length)];
 
-        // 攻撃時スキル
+        // 味方のスキル判定
         if (task.side === "ally" && actor.skill && actor.skill.timing === "attack") {
             actor.skillCount++;
             if (actor.skillCount >= actor.skill.interval) {
