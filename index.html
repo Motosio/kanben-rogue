@@ -18,16 +18,24 @@
 </div>
 
 <div id="shop" class="hidden">
-    <div style="display: flex; justify-content: space-around; align-items: center; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; margin: 10px;">
+    <div class="info-bar">
         <div>Coin: <span id="coinText"></span></div>
-        <div id="nextEnemyInfo" style="font-weight: bold; color: #ffcc00;">Next: ???</div>
+        <div id="nextEnemyInfo">Next: ???</div>
     </div>
+    
     <div id="shopCards"></div>
     <button onclick="reroll()">更新(1コイン)</button>
-    <h3>デッキ (最大5枚)</h3>
-    <div id="deck"></div>
-    <h3 style="color: #ff4444;">売却ゾーン (ここにドラッグ)</h3>
-    <div id="sellZone"></div>
+
+    <div class="deck-container">
+        <h3>デッキ (最大5枚)</h3>
+        <div id="deck"></div>
+    </div>
+
+    <div class="sell-container">
+        <h3 style="color: #ff4444;">売却ゾーン (ここにドラッグ)</h3>
+        <div id="sellZone"></div>
+    </div>
+    
     <button onclick="battle()" class="btn-battle">戦闘開始</button>
 </div>
 
