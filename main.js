@@ -1,3 +1,9 @@
+document.addEventListener("contextmenu", e=>{
+    if(e.target.tagName === "IMG"){
+        e.preventDefault();
+    }
+});
+
 // --- キャラクターデータ ---
 const baseChars = [
     { name: "喜ヶ楽 スウ", rarity: 3, elem: "光", atk: 300, hp: 3000, 
