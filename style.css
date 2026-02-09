@@ -1,6 +1,12 @@
 body { background: #000; color: white; text-align: center; font-family: 'Courier New', Courier, monospace; margin: 0; padding-bottom: 50px; overflow-x: hidden; }
 .hidden { display: none !important; }
 
+.card img {
+    pointer-events: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+}
+
 /* カード基本設定 */
 .card {
     position: relative; width: 110px; height: 160px; background: #111; 
