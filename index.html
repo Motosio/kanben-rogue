@@ -115,8 +115,31 @@ const enemyTypes = {
             log("<span style='color:#ffaa00;'>攻撃力が上昇した！</span>");
         }}
     },
-    kurorekishi: { name: "黒歴史", hp: 8000, atk: 300, elem: "闇" },
-    nouki: { name: "納期", hp: 15000, atk: 900, elem: "闇" }
+    // --- 強化：黒歴史 (Stage 5 ボス) ---
+    kurorekishi: { 
+        name: "黒歴史", hp: 12000, atk: 600, elem: "闇",
+        skill: { name: "フラッシュバック", interval: 2, action: (e, ts, ds) => {
+            // 全員に麻痺(⚡)と、低確率で拘束(⛓️)を付与
+            ts.forEach(t => {
+                addStatus(t, "麻痺", 1, 2);
+                if(Math.random() > 0.7) addStatus(t, "拘束", 1, 1);
+            });
+            log("<b style='color:#ff00ff;'>黒歴史が蘇る！ 精神的ダメージで動けない！</b>");
+        }}
+    },
+    // --- 強化：納期 (Stage 10 ラストボス) ---
+    nouki: { 
+        name: "納期", hp: 30000, atk: 1200, elem: "闇",
+        skill: { name: "デッドライン", interval: 3, action: (e, ts, ds) => {
+            // 全員のステータスを下げ、さらに自身を大幅に興奮(💥)状態にする
+            addStatus(e, "興奮", 5, 3); 
+            ts.forEach(t => {
+                // 強制的に大ダメージを与える処理を追加（atkの50%分を直接削るなど）
+                t.currentHp = Math.max(1, t.currentHp - 1000);
+            });
+            log("<b style='color:#ff0000;'>納期が迫っている！ 全員に絶望的な負荷！</b>");
+        }}
+    }
 };
 
 let stage=1, coin=6, deck=[], shop=[];
