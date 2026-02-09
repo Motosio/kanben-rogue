@@ -57,3 +57,42 @@ body { background: #000; color: white; text-align: center; font-family: 'Courier
     50% { transform: translate(-1px, 1px); }
     100% { transform: translate(0,0); }
 }
+
+/* ダメージ時フラッシュ */
+.damage-flash {
+    animation: flashRed 0.25s ease;
+}
+
+@keyframes flashRed {
+    0% { background-color: rgba(255,0,0,0.7); }
+    100% { background-color: transparent; }
+}
+
+/* 振動 */
+.shake {
+    animation: shake 0.25s;
+}
+
+@keyframes shake {
+    0% { transform: translate(0,0); }
+    25% { transform: translate(-4px,2px); }
+    50% { transform: translate(4px,-2px); }
+    75% { transform: translate(-3px,1px); }
+    100% { transform: translate(0,0); }
+}
+
+/* ダメージ数字 */
+.damage-number {
+    position: absolute;
+    color: #ff4444;
+    font-weight: bold;
+    font-size: 22px;
+    pointer-events: none;
+    animation: floatUp 0.9s ease-out forwards;
+    text-shadow: 0 0 4px black;
+}
+
+@keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-40px); }
+}
