@@ -77,9 +77,11 @@ const baseChars = [
       }}},
     { name: "役握 キョウ", rarity: 3, elem: "闇", atk: 200, hp: 2000, 
       skill: { timing: "attack", interval: 2, action: (a, ts, ds) => {
-          let target = ts[Math.floor(Math.random() * ts.length)];
-          addStatus(target, "麻痺", 1, 2);
-          log(`<b style='color:#8800ff;'>キョウの呪縛！ ${target.name}を痺れさせた！</b>`);
+          let target = ts.filter(t=>t.currentHp>0)[0];
+          if(target) {
+              addStatus(target, "麻痺", 1, 2);
+              log(`<b style='color:#8800ff;'>キョウの呪縛！ ${target.name}を痺れさせた！</b>`);
+          }
       }}},
     { name: "リゲル", rarity: 3, elem: "水", atk: 300, hp: 3000, 
       skill: { timing: "start", action: (a, ts, ds) => {
@@ -88,9 +90,12 @@ const baseChars = [
       }}},
     { name: "加西 カフ", rarity: 4, elem: "水", atk: 400, hp: 5000, 
       skill: { timing: "attack", interval: 3, action: (a, ts, ds) => {
-          let target = ts[Math.floor(Math.random() * ts.length)];
-          addStatus(target, "拘束", 1, 2);
-          log(`<b style='color:#0088ff;'>カフの牢獄！ ${target.name}を拘束！</b>`);
+          let aliveTs = ts.filter(t=>t.currentHp>0);
+          let target = aliveTs[Math.floor(Math.random() * aliveTs.length)];
+          if(target) {
+              addStatus(target, "拘束", 1, 2);
+              log(`<b style='color:#0088ff;'>カフの牢獄！ ${target.name}を拘束！</b>`);
+          }
       }}},
     { name: "イグノア･フラクタル", rarity: 3, elem: "光", atk: 100, hp: 2000, 
       skill: { timing: "start", action: (a, ts, ds) => {
@@ -100,46 +105,52 @@ const baseChars = [
     { name: "リーヴ･アレクサンダー", rarity: 5, elem: "火", atk: 999, hp: 9999 }
 ];
 
+// --- 敵データ ---
 const enemyTypes = {
     slime: { 
         name: "スライム", hp: 3500, atk: 700, elem: "水", 
-        skill: { name: "増殖", interval: 2, action: (e) => {
+        skill: { name: "増殖", interval: 2, action: (e, ts, ds) => {
             e.currentHp = Math.min(e.hp, e.currentHp + 1000);
             log("<b style='color:#00ff00;'>スライムの増殖！ HPが1000回復した！</b>");
         }}
     },
     golem: { 
         name: "ゴーレム", hp: 6500, atk: 450, elem: "草",
-        skill: { name: "硬化", interval: 3, action: (e) => {
+        skill: { name: "硬化", interval: 3, action: (e, ts, ds) => {
             addStatus(e, "興奮", 1, 3); 
             log("<b style='color:#ffaa00;'>ゴーレムの硬化！ 攻撃力が上昇！</b>");
         }}
     },
-    kurorekishi: { name: "黒歴史", hp: 8000, atk: 250, elem: "闇" },
-    nouki: { name: "納期", hp: 13000, atk: 900, elem: "闇" }
+    kurorekishi: { name: "黒歴史", hp: 8000, atk: 300, elem: "闇" },
+    nouki: { name: "納期", hp: 15000, atk: 900, elem: "闇" }
 };
 
+// --- グローバル変数 ---
 let stage=1, coin=6, deck=[], shop=[];
 let enemies = [], nextEnemies = [];
 let battleQueue = [];
 
+// UI要素
 const ui_start = document.getElementById("start"), ui_shop = document.getElementById("shop"), ui_battle = document.getElementById("battle");
 const ui_clear = document.getElementById("clearScreen"), ui_over = document.getElementById("gameOverScreen");
 const shopCards=document.getElementById("shopCards"), deckDiv=document.getElementById("deck"), sellZone=document.getElementById("sellZone");
 const coinText=document.getElementById("coinText"), stageText=document.getElementById("stageText"), nextEnemyInfo=document.getElementById("nextEnemyInfo");
 const enemyArea=document.getElementById("enemyArea"), allyArea=document.getElementById("allyArea"), logDiv=document.getElementById("log");
 
+// --- システム関数 ---
 function hideAllScreens() { [ui_start, ui_shop, ui_battle, ui_clear, ui_over].forEach(div => div.classList.add("hidden")); }
 window.onload=()=>{ hideAllScreens(); ui_start.classList.remove("hidden"); };
 function startGame(){ stage=1; coin=6; deck=[]; hideAllScreens(); ui_shop.classList.remove("hidden"); refreshShop(); }
 function log(t){ logDiv.innerHTML += `<div>${t}</div>`; logDiv.scrollTop = logDiv.scrollHeight; }
 function cost(r){return r==3?2:r==4?3:4;}
 function copyChar(c){return {...c,rank:1,currentHp:c.hp,status:[],skillCount:0};}
+
 function getIcon(type){
     switch(type){
         case "麻痺": return "⚡"; case "拘束": return "⛓️"; case "興奮": return "💥"; default: return "❓";
     }
 }
+
 function getAffinity(aElem, tElem) {
     const table = { "火": "草", "草": "水", "水": "火", "光": "闇", "闇": "光" };
     if (table[aElem] === tElem) return 1.5;
@@ -175,7 +186,7 @@ function generateNextEnemies() {
     let count = Math.min(4, Math.floor(stage / 2) + 1);
     let result = [];
     if(stage===5) result.push({...enemyTypes.kurorekishi, currentHp: 8000, status: [], skillCount: 0});
-    else if(stage===10) result.push({...enemyTypes.nouki, currentHp: 13000, status: [], skillCount: 0});
+    else if(stage===10) result.push({...enemyTypes.nouki, currentHp: 15000, status: [], skillCount: 0});
     else { while(result.length < count) { let et = pool[Math.floor(Math.random()*pool.length)]; result.push({ ...et, currentHp: et.hp, status: [], skillCount: 0 }); } }
     return result;
 }
@@ -195,6 +206,7 @@ function refreshShop(){
 
 function drawShop(){ shopCards.innerHTML=""; shop.forEach((c,i)=>{ let d=document.createElement("div"); d.className=`card rarity-${c.rarity}`; d.draggable=true; d.innerHTML=createCardHtml(c); d.ondragstart=e=>e.dataTransfer.setData("shopIndex",i); shopCards.appendChild(d); }); }
 function drawDeck(){ deckDiv.innerHTML=""; deck.forEach((c,i)=>{ let d=document.createElement("div"); d.className=`card rarity-${c.rarity}`; d.draggable=true; d.innerHTML=createCardHtml(c); d.ondragstart=e=>e.dataTransfer.setData("deckIndex",i); deckDiv.appendChild(d); }); }
+
 deckDiv.ondragover=e=>e.preventDefault();
 deckDiv.ondrop=e=>{ let i=e.dataTransfer.getData("shopIndex"); if(i!=="") buy(Number(i)); };
 sellZone.ondragover=e=>e.preventDefault();
@@ -207,7 +219,9 @@ function buy(i){
     else { if(deck.length >= 5) return; coin -= p; deck.push(copyChar(c)); shop.splice(i,1); }
     coinText.innerText = coin; drawShop(); drawDeck();
 }
+
 function reroll(){ if(coin>0) { coin--; refreshShop(); } }
+
 function battle(){ if(deck.length>0) { hideAllScreens(); ui_battle.classList.remove("hidden"); startBattle(); } }
 
 function startBattle(){
@@ -227,41 +241,61 @@ function prepareTurn() {
     aliveEnemies.forEach(e => battleQueue.push({ type: "action", actor: e, side: "enemy" }));
 }
 
-function nextTurn(){
+// --- メインバトルロジック ---
+function nextTurn() {
     if (battleQueue.length === 0) {
-        if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) { finishBattle(); } 
-        else { [...deck, ...enemies].forEach(u => applyStatus(u)); prepareTurn(); nextTurn(); }
+        if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) {
+            finishBattle();
+        } else {
+            [...deck, ...enemies].forEach(u => applyStatus(u));
+            prepareTurn();
+            // ログの区切り
+            log("<hr style='border:0; border-top:1px solid #333;'>");
+        }
         return;
     }
 
     let task = battleQueue.shift();
     let actor = task.actor;
-    if (actor.currentHp <= 0) { nextTurn(); return; }
+
+    if (actor.currentHp <= 0) return nextTurn();
 
     if (task.type === "skill") {
         actor.skill.action(actor, enemies, deck);
         drawEnemy(); drawAllies();
     } 
     else if (task.type === "action") {
-        if (isStunned(actor)) { log(`${actor.name}は拘束されている！`); drawEnemy(); drawAllies(); return; }
+        if (isStunned(actor)) {
+            log(`${actor.name}は拘束中！`);
+            drawEnemy(); drawAllies();
+            return;
+        }
 
-        // --- スキル発動チェック ---
+        // スキルチェック
         if (actor.skill && (actor.skill.timing === "attack" || !actor.skill.timing)) {
             actor.skillCount++;
             if (actor.skillCount >= actor.skill.interval) {
-                actor.skill.action(actor, enemies, deck);
-                actor.skillCount = 0;
+                // ターゲット設定: 味方なら敵全体、敵なら味方全体を渡す
+                const targets = (task.side === "ally") ? enemies : deck;
+                const friends = (task.side === "ally") ? deck : enemies;
+                actor.skill.action(actor, targets, friends);
+                actor.skillCount = 0; // 確実にリセット
                 drawEnemy(); drawAllies();
-                // スキルが攻撃を兼ねていない場合はここから通常攻撃へ
             }
         }
 
-        let targets = (task.side === "ally") ? enemies.filter(e => e.currentHp > 0) : deck.filter(c => c.currentHp > 0);
-        if (targets.length === 0) { nextTurn(); return; }
-        let target = targets[Math.floor(Math.random() * targets.length)];
+        // 通常攻撃
+        let aliveTargets = (task.side === "ally") ? 
+            enemies.filter(e => e.currentHp > 0) : 
+            deck.filter(c => c.currentHp > 0);
 
-        log(`${actor.name}の攻撃！`);
-        dealDamage(actor, target, calcAtk(actor));
+        if (aliveTargets.length > 0) {
+            let target = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+            log(`${actor.name}の攻撃！`);
+            dealDamage(actor, target, calcAtk(actor));
+        } else {
+            nextTurn();
+        }
     }
 }
 
@@ -287,7 +321,12 @@ function dealDamage(attacker, target, baseDmg) {
         const popup = document.createElement("div");
         popup.className = "dmg-popup"; popup.innerText = finalDmg;
         targetEl.appendChild(popup);
-        setTimeout(() => { targetEl.classList.remove('dmg-flash'); popup.remove(); drawEnemy(); drawAllies(); if(target.currentHp <= 0) log(`<b>${target.name}を撃破！</b>`); }, 400);
+        setTimeout(() => { 
+            targetEl.classList.remove('dmg-flash'); 
+            popup.remove(); 
+            drawEnemy(); drawAllies(); 
+            if(target.currentHp <= 0) log(`<b>${target.name}を撃破！</b>`);
+        }, 400);
     } else {
         drawEnemy(); drawAllies();
     }
