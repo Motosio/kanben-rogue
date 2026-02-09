@@ -26,7 +26,7 @@ body {
     overflow: visible;
 }
 
-/* 画像スペース */
+/* 画像スペース (中央寄せ修正済) */
 .card-img-space {
     position: absolute;
     top: 25px;
@@ -51,7 +51,7 @@ body {
     display: block;
 }
 
-/* 属性丸 */
+/* 属性丸(左上) */
 .elem-circle {
     position: absolute;
     top: 5px;
@@ -73,6 +73,7 @@ body {
 .elem-光 { background: #ffffaa; color: #555; box-shadow: 0 0 5px #ffffaa; }
 .elem-闇 { background: #8800ff; box-shadow: 0 0 5px #8800ff; }
 
+/* レア度星(右上) */
 .rarity-stars {
     position: absolute;
     top: 5px;
@@ -82,6 +83,7 @@ body {
     z-index: 10;
 }
 
+/* 名前・ステータス */
 .card-name {
     position: absolute;
     bottom: 28px;
@@ -118,6 +120,7 @@ body {
     z-index: 10;
 }
 
+/* レア度別エフェクト */
 .rarity-3 { border-color: #007bff; }
 .rarity-4 { border-color: #ffd700; }
 .rarity-5 { border-color: #fff; animation: shine 2s linear infinite; }
@@ -127,6 +130,7 @@ body {
     50% { filter: brightness(1.4); }
 }
 
+/* 演出 */
 .dmg-flash { animation: shake 0.4s ease-in-out; border-color: #f00 !important; }
 @keyframes shake {
     0%, 100% { transform: translate(0,0); }
@@ -148,6 +152,7 @@ body {
     100% { opacity: 0; transform: translate(-50%, -50px) scale(1); }
 }
 
+/* レイアウト */
 #deck { border: 2px solid #444; background: #1a1a1a; min-height: 170px; margin: 10px; display: flex; justify-content: center; flex-wrap: wrap; border-radius: 10px; }
 #sellZone { border: 2px dashed #ff4444; height: 50px; margin: 10px; display: flex; justify-content: center; align-items: center; background: rgba(255,0,0,0.1); }
 #log { height: 100px; background: rgba(0,0,0,0.9); border-bottom: 2px solid #333; overflow-y: auto; font-size: 14px; padding: 10px; text-align: left; line-height: 1.5; }
