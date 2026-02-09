@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Card Rogue</title>
+    <title>Card Rogue - Element Edition</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
     <h1>Card Rogue</h1>
     <button onclick="startGame()">スタート</button>
     <button>図鑑(未実装)</button>
-    <button onclick="alert('敵を倒して進むだけです')">チュートリアル</button>
+    <button onclick="alert('敵の弱点を突いて進もう！')">チュートリアル</button>
 </div>
 
 <div id="shop" class="hidden">
@@ -48,38 +48,29 @@
 <script>
 // --- 基本データ ---
 const baseChars=[
-    {
-        name:"スウ",atk:300,hp:3000,rarity:3,
-        skill: { 
-            type: "onAttack",
-            interval: 3,
-            action: (actor, targets) => {
-                targets.forEach(t => addStatus(t, "麻痺", 1, 2));
-            }
-        }
-    },
-    {name:"レオナ",atk:400,hp:4000,rarity:4},
-    {name:"コウ",atk:500,hp:7000,rarity:5},
-    {name:"キョウ",atk:300,hp:1000,rarity:3},
-    {name:"カフ",atk:400,hp:4000,rarity:4},
-    {name:"イグノア",atk:300,hp:3000,rarity:3},
-    {name:"アレクサンダー",atk:999,hp:9999,rarity:5},
-    {name:"スフェリコン",atk:400,hp:4000,rarity:4},
-    {name:"蜜夜",atk:400,hp:4000,rarity:4},
-    {name:"メビウス",atk:400,hp:4000,rarity:4},
-    {name:"ローマン",atk:300,hp:3000,rarity:3},
-    {name:"ゴマ",atk:1,hp:3,rarity:3},
-    {name:"ココねこ",atk:999,hp:9999,rarity:5},
-    {name:"ぜるぜるヤドカリ",atk:436,hp:9999,rarity:4},
-    {name:"最強無敵オレオピーマン",atk:9999,hp:99999,rarity:5},
-    {name:"ねこに",atk:0,hp:1,rarity:3},
+    {name:"スウ",atk:300,hp:3000,rarity:3,elem:"火", skill:{interval:3, action:(a,ts)=>ts.forEach(t=>addStatus(t,"麻痺",1,2))}},
+    {name:"レオナ",atk:400,hp:4000,rarity:4,elem:"水"},
+    {name:"コウ",atk:500,hp:7000,rarity:5,elem:"草"},
+    {name:"キョウ",atk:300,hp:1000,rarity:3,elem:"火"},
+    {name:"カフ",atk:400,hp:4000,rarity:4,elem:"光"},
+    {name:"イグノア",atk:300,hp:3000,rarity:3,elem:"闇"},
+    {name:"アレクサンダー",atk:999,hp:9999,rarity:5,elem:"光"},
+    {name:"スフェリコン",atk:400,hp:4000,rarity:4,elem:"水"},
+    {name:"蜜夜",atk:400,hp:4000,rarity:4,elem:"闇"},
+    {name:"メビウス",atk:400,hp:4000,rarity:4,elem:"光"},
+    {name:"ローマン",atk:300,hp:3000,rarity:3,elem:"草"},
+    {name:"ゴマ",atk:1,hp:3,rarity:3,elem:"水"},
+    {name:"ココねこ",atk:999,hp:9999,rarity:5,elem:"闇"},
+    {name:"ぜるぜるヤドカリ",atk:436,hp:9999,rarity:4,elem:"水"},
+    {name:"最強無敵オレオピーマン",atk:9999,hp:99999,rarity:5,elem:"草"},
+    {name:"ねこに",atk:0,hp:1,rarity:3,elem:"光"},
 ];
 
 const enemyTypes = {
-    slime: { name: "スライム", hp: 2500, atk: 600, action: "slime_skill" },
-    golem: { name: "ゴーレム", hp: 3000, atk: 200, action: "golem_skill" },
-    kurorekishi: { name: "黒歴史", hp: 6000, atk: 100, action: "kuro_skill" },
-    nouki: { name: "納期", hp: 7000, atk: 600, action: "nouki_skill" }
+    slime: { name: "スライム", hp: 2500, atk: 600, elem: "水", action: "slime_skill" },
+    golem: { name: "ゴーレム", hp: 3000, atk: 200, elem: "草", action: "golem_skill" },
+    kurorekishi: { name: "黒歴史", hp: 6000, atk: 100, elem: "闇", action: "kuro_skill" },
+    nouki: { name: "納期", hp: 7000, atk: 600, elem: "闇", action: "nouki_skill" }
 };
 
 let stage=1, coin=6, deck=[], shop=[];
@@ -103,6 +94,38 @@ function getIcon(type){
     }
 }
 function hideAllScreens() { [startDiv, shopDiv, battleDiv, clearScreen, gameOverScreen].forEach(div => div.classList.add("hidden")); }
+
+// --- 属性相性計算 ---
+function getAffinity(aElem, tElem) {
+    if (aElem === "火" && tElem === "草") return 1.5;
+    if (aElem === "草" && tElem === "水") return 1.5;
+    if (aElem === "水" && tElem === "火") return 1.5;
+    if (aElem === "草" && tElem === "火") return 0.5;
+    if (aElem === "水" && tElem === "草") return 0.5;
+    if (aElem === "火" && tElem === "水") return 0.5;
+    if ((aElem === "光" && tElem === "闇") || (aElem === "闇" && tElem === "光")) return 1.5;
+    return 1.0;
+}
+
+// --- カードHTML生成 ---
+function createCardHtml(c, isEnemy = false) {
+    const stars = "★".repeat(c.rarity);
+    const maxHp = isEnemy ? c.hp : (c.hp + (c.rank - 1) * 800);
+    const currentHp = c.currentHp !== undefined ? c.currentHp : maxHp;
+    const atk = calcAtk(c);
+    const skillInfo = c.skill ? `<div class="skill-tag">${c.skillCount || 0}/${c.skill.interval}</div>` : "";
+    const statusIcons = (c.status || []).map(s => `<span title="${s.type}">${getIcon(s.type)}${s.turn}</span>`).join("");
+
+    return `
+        ${skillInfo}
+        <div class="elem-circle elem-${c.elem}">${isEnemy ? "" : c.rank}</div>
+        <div class="rarity-stars">${stars}</div>
+        <div class="card-status-icons">${statusIcons}</div>
+        <div class="card-name">${c.name}</div>
+        <div class="card-atk">⚔️${atk}</div>
+        <div class="card-hp">♥${currentHp}</div>
+    `;
+}
 
 window.onload=()=>{ hideAllScreens(); startDiv.classList.remove("hidden"); };
 function startGame(){ stage=1; coin=6; deck=[]; hideAllScreens(); shopDiv.classList.remove("hidden"); refreshShop(); }
@@ -131,7 +154,7 @@ function drawShop(){
         let d=document.createElement("div");
         d.className=`card rarity-${c.rarity}`;
         d.draggable=true;
-        d.innerHTML=`${c.name}<br>⚔️${c.atk}<br>♥${c.hp}<br>${cost(c.rarity)}c`;
+        d.innerHTML=createCardHtml(c) + `<div style="position:absolute; top:40%; width:100%; text-align:center; font-size:10px;">${cost(c.rarity)}c</div>`;
         d.ondragstart=e=>e.dataTransfer.setData("shopIndex",i);
         shopCards.appendChild(d);
     });
@@ -143,10 +166,7 @@ function drawDeck(){
         let d=document.createElement("div");
         d.className=`card rarity-${c.rarity}`;
         d.draggable=true;
-        let statusHtml = (c.status || []).map(s=>`${s.level}${getIcon(s.type)}${s.turn}`).join(" ");
-        let displayMaxHp = c.hp + (c.rank - 1) * 800;
-        let skillTag = c.skill ? `<div class="skill-tag">${c.skillCount}/${c.skill.interval}</div>` : "";
-        d.innerHTML=`${skillTag}${c.name} ★${c.rank}<br>⚔️${calcAtk(c)}<br>♥${c.currentHp || displayMaxHp}/${displayMaxHp}<br><small>${statusHtml}</small>`;
+        d.innerHTML=createCardHtml(c);
         d.ondragstart=e=>e.dataTransfer.setData("deckIndex",i);
         deckDiv.appendChild(d);
     });
@@ -178,7 +198,6 @@ function buy(i){
 
 function reroll(){ if(coin>0) { coin--; refreshShop(); } }
 
-// --- バトルロジック ---
 function battle(){ if(deck.length>0) { hideAllScreens(); battleDiv.classList.remove("hidden"); startBattle(); } }
 
 function startBattle(){
@@ -230,7 +249,6 @@ function processAllyAction() {
         if (aliveEnemies.length > 0) {
             let target = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
             
-            // スキルカウント加算と発動判定
             if (actor.skill) {
                 actor.skillCount++;
                 if (actor.skillCount >= actor.skill.interval) {
@@ -239,7 +257,6 @@ function processAllyAction() {
                     actor.skillCount = 0;
                 }
             }
-            
             dealDamage(actor, target, calcAtk(actor));
         }
     }
@@ -281,9 +298,14 @@ function processEnemyAction() {
     setTimeout(nextTurn, 400); 
 }
 
-function dealDamage(attacker, target, dmg) {
-    target.currentHp = Math.max(0, target.currentHp - dmg);
-    log(`${attacker.name}の攻撃！ ${target.name}に ${dmg} ダメージ`);
+function dealDamage(attacker, target, baseDmg) {
+    const affinity = getAffinity(attacker.elem, target.elem);
+    const finalDmg = Math.floor(baseDmg * affinity);
+    
+    target.currentHp = Math.max(0, target.currentHp - finalDmg);
+    
+    let logColor = affinity > 1.0 ? "#ffcc00" : (affinity < 1.0 ? "#aaaaaa" : "white");
+    log(`${attacker.name}の攻撃！ ${target.name}に <span style="color:${logColor}">${finalDmg}</span> ダメージ` + (affinity > 1.0 ? " (効果絶大！)" : ""));
     
     let targetEl;
     if (enemies.includes(target)) {
@@ -358,17 +380,20 @@ function drawEnemy(){
     enemyArea.innerHTML = "";
     enemies.forEach(e => {
         if(e.currentHp <= 0) return;
-        let statusHtml = e.status.map(s=>`<span>${s.level}${getIcon(s.type)}${s.turn}</span>`).join(" ");
-        enemyArea.innerHTML += `<div class="card rarity-4">${e.name}<br>⚔️${calcAtk(e)}<br>♥${e.currentHp}<br><div>${statusHtml}</div></div>`;
+        let d = document.createElement("div");
+        d.className = "card rarity-4";
+        d.innerHTML = createCardHtml(e, true);
+        enemyArea.appendChild(d);
     });
 }
 
 function drawAllies(){
     allyArea.innerHTML="";
     deck.forEach(c=>{ if(c.currentHp>0) {
-        let statusHtml = c.status.map(s=>`<span>${s.level}${getIcon(s.type)}${s.turn}</span>`).join(" ");
-        let skillTag = c.skill ? `<div class="skill-tag">${c.skillCount}/${c.skill.interval}</div>` : "";
-        allyArea.innerHTML += `<div class="card rarity-${c.rarity}">${skillTag}${c.name} ★${c.rank}<br>⚔️${calcAtk(c)}<br>♥${c.currentHp}<br><div>${statusHtml}</div></div>`;
+        let d = document.createElement("div");
+        d.className = `card rarity-${c.rarity}`;
+        d.innerHTML = createCardHtml(c);
+        allyArea.appendChild(d);
     }});
 }
 
