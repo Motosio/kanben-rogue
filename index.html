@@ -18,7 +18,11 @@
 </div>
 
 <div id="shop" class="hidden">
-    <h3>Coin: <span id="coinText"></span></h3>
+    <div style="display: flex; justify-content: space-around; align-items: center; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; margin: 10px;">
+        <div>Coin: <span id="coinText"></span></div>
+        <div id="nextEnemyInfo" style="font-weight: bold; color: #ffcc00;">Next: ???</div>
+    </div>
+    
     <div id="shopCards"></div>
     <button onclick="reroll()">更新(1コイン)</button>
     <h3>デッキ (最大5枚 / 同じキャラでランクUP)</h3>
@@ -75,11 +79,12 @@ const enemyTypes = {
 
 let stage=1, coin=6, deck=[], shop=[];
 let enemies = [], battlePhase = "idle", actorIndex = 0; 
+let nextEnemies = []; // 先読み用の配列
 
 const startDiv=document.getElementById("start"), shopDiv=document.getElementById("shop"), battleDiv=document.getElementById("battle");
 const clearScreen=document.getElementById("clearScreen"), gameOverScreen=document.getElementById("gameOverScreen");
 const shopCards=document.getElementById("shopCards"), deckDiv=document.getElementById("deck"), sellZone=document.getElementById("sellZone");
-const coinText=document.getElementById("coinText"), stageText=document.getElementById("stageText");
+const coinText=document.getElementById("coinText"), stageText=document.getElementById("stageText"), nextEnemyInfo=document.getElementById("nextEnemyInfo");
 const enemyArea=document.getElementById("enemyArea"), allyArea=document.getElementById("allyArea"), logDiv=document.getElementById("log");
 
 // --- システム関数 ---
@@ -107,7 +112,7 @@ function getAffinity(aElem, tElem) {
     return 1.0;
 }
 
-// --- カードHTML生成 (画像スペース確保版) ---
+// --- カードHTML生成 ---
 function createCardHtml(c, isEnemy = false) {
     const stars = "★".repeat(c.rarity);
     const maxHp = isEnemy ? c.hp : (c.hp + (c.rank - 1) * 800);
@@ -121,10 +126,7 @@ function createCardHtml(c, isEnemy = false) {
         <div class="elem-circle elem-${c.elem}">${isEnemy ? "" : c.rank}</div>
         <div class="rarity-stars">${stars}</div>
         <div class="card-status-icons">${statusIcons}</div>
-        
-        <div class="card-img-space">
-            </div>
-
+        <div class="card-img-space"></div>
         <div class="card-name">${c.name}</div>
         <div class="card-atk">⚔️${atk}</div>
         <div class="card-hp">♥${currentHp}</div>
@@ -141,8 +143,33 @@ function backToTitle(){
     drawDeck(); shopCards.innerHTML="";
 }
 
+// 次の敵を生成する共通ロジック
+function generateNextEnemies() {
+    let pool = [];
+    let count = 1;
+    if (stage <= 4) { count = 2; pool = [enemyTypes.slime, enemyTypes.golem]; }
+    else if (stage === 5) { count = 1; pool = [enemyTypes.kurorekishi]; }
+    else if (stage <= 9) { count = 3; pool = [enemyTypes.slime, enemyTypes.golem]; }
+    else { count = 1; pool = [enemyTypes.nouki]; }
+
+    let result = [];
+    for(let i=0; i<count; i++) {
+        let et = pool[Math.floor(Math.random()*pool.length)];
+        result.push({ ...et, currentHp: et.hp, status: [] });
+    }
+    return result;
+}
+
 function refreshShop(){
-    stageText.innerText="Stage "+stage; coinText.innerText=coin; shop=[];
+    stageText.innerText="Stage "+stage; 
+    coinText.innerText=coin; 
+    shop=[];
+    
+    // 次の敵を決定して表示
+    nextEnemies = generateNextEnemies();
+    const enemyNames = nextEnemies.map(e => `${e.name}(${e.elem})`).join(", ");
+    nextEnemyInfo.innerText = `次: ${enemyNames}`;
+
     let pool= (stage<=3) ? [3] : (stage<=6) ? [3,4] : [3,3,4,4,5];
     for(let i=0;i<6;i++){
         let r=pool[Math.random()*pool.length|0];
@@ -206,19 +233,8 @@ function battle(){ if(deck.length>0) { hideAllScreens(); battleDiv.classList.rem
 
 function startBattle(){
     logDiv.innerHTML = "";
-    enemies = [];
-    let count = 1;
-    let pool = [];
-
-    if (stage <= 4) { count = 2; pool = [enemyTypes.slime, enemyTypes.golem]; }
-    else if (stage === 5) { count = 1; pool = [enemyTypes.kurorekishi]; }
-    else if (stage <= 9) { count = 3; pool = [enemyTypes.slime, enemyTypes.golem]; }
-    else { count = 1; pool = [enemyTypes.nouki]; }
-
-    for(let i=0; i<count; i++) {
-        let et = pool[Math.floor(Math.random()*pool.length)];
-        enemies.push({ ...et, currentHp: et.hp, status: [] });
-    }
+    // refreshShopで決めておいた敵をセット
+    enemies = JSON.parse(JSON.stringify(nextEnemies));
 
     deck.forEach(c => { 
         c.currentHp = c.hp + (c.rank - 1) * 800; 
