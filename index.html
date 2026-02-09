@@ -50,7 +50,7 @@
 </div>
 
 <script>
-// --- 新キャラクターデータ ---
+// --- キャラクターデータ ---
 const baseChars = [
     { name: "喜ヶ楽 スウ", rarity: 3, elem: "光", atk: 300, hp: 3000, 
       skill: { timing: "attack", interval: 3, action: (a, ts, ds) => {
@@ -80,7 +80,7 @@ const baseChars = [
     { name: "リゲル", rarity: 3, elem: "水", atk: 300, hp: 3000, 
       skill: { timing: "start", action: (a, ts, ds) => {
           let target = ds[Math.floor(Math.random() * ds.length)];
-          target.currentHp = Math.max(1, target.currentHp - 500);
+          if(target) target.currentHp = Math.max(1, target.currentHp - 500);
           ds.forEach(d => addStatus(d, "興奮", 2, 2));
       }}},
     { name: "加西 カフ", rarity: 4, elem: "水", atk: 400, hp: 5000, 
@@ -167,47 +167,27 @@ function backToTitle(){
 }
 
 function generateNextEnemies() {
-    let pool = [enemyTypes.slime, enemyTypes.golem]; // 基本の雑魚プール
+    let pool = [enemyTypes.slime, enemyTypes.golem];
     let count = 0;
-    let fixedEnemies = []; // ボスなどの固定枠
+    let fixedEnemies = [];
 
-    if (stage === 1) {
-        count = 1;
-    } 
-    else if (stage >= 2 && stage <= 3) {
-        count = 2;
-    } 
-    else if (stage === 4) {
-        count = 3;
-    } 
-    else if (stage === 5) {
-        fixedEnemies.push(enemyTypes.kurorekishi); // 黒歴史 確定
-        count = 2; // + 雑魚2体
-    } 
-    else if (stage >= 6 && stage <= 7) {
-        count = 4;
-    } 
-    else if (stage >= 8 && stage <= 9) {
-        count = 5;
-    } 
-    else if (stage === 10) {
-        fixedEnemies.push(enemyTypes.nouki); // 納期 確定
-        count = 4; // + 雑魚4体
-    }
+    if (stage === 1) count = 1;
+    else if (stage >= 2 && stage <= 3) count = 2;
+    else if (stage === 4) count = 3;
+    else if (stage === 5) { fixedEnemies.push(enemyTypes.kurorekishi); count = 2; }
+    else if (stage >= 6 && stage <= 7) count = 4;
+    else if (stage >= 8 && stage <= 9) count = 5;
+    else if (stage === 10) { fixedEnemies.push(enemyTypes.nouki); count = 4; }
 
     let result = [];
-    // 固定枠の追加
-    fixedEnemies.forEach(fe => {
-        result.push({ ...fe, currentHp: fe.hp, status: [] });
-    });
-    // ランダム枠の追加
+    fixedEnemies.forEach(fe => result.push({ ...fe, currentHp: fe.hp, status: [] }));
     for(let i=0; i<count; i++) {
         let et = pool[Math.floor(Math.random()*pool.length)];
         result.push({ ...et, currentHp: et.hp, status: [] });
     }
-    
     return result;
 }
+
 function refreshShop(){
     stageText.innerText="Stage "+stage; coinText.innerText=coin; shop=[];
     nextEnemies = generateNextEnemies();
@@ -282,17 +262,13 @@ function startBattle(){
         c.status = []; 
         c.skillCount = 0;
     });
-
-    // バトル開始時スキルの発動
     deck.forEach(c => {
         if(c.skill && c.skill.timing === "start") {
             log(`<b style='color:#00ffff;'>${c.name}がスキルを発動！</b>`);
             c.skill.action(c, enemies, deck);
         }
     });
-
     battlePhase = "ally"; actorIndex = 0; drawEnemy(); drawAllies();
-    log(`Stage ${stage}: 戦闘開始！`);
 }
 
 function nextTurn(){
@@ -310,14 +286,12 @@ function processAllyAction() {
     let actor = deck[actorIndex];
     if (actor.currentHp <= 0) { actorIndex++; processAllyAction(); return; }
 
-    log(`--- ${actor.name} の行動 ---`);
     if (isStunned(actor)) {
         log(actor.name + " は拘束されている！");
     } else {
         let aliveEnemies = enemies.filter(e => e.currentHp > 0);
         if (aliveEnemies.length > 0) {
             let target = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
-            
             if (actor.skill && actor.skill.timing === "attack") {
                 actor.skillCount++;
                 if (actor.skillCount >= actor.skill.interval) {
@@ -341,7 +315,6 @@ function processEnemyAction() {
     }
 
     let enemyActor = aliveEnemies[actorIndex];
-    log(`--- ${enemyActor.name} の行動 ---`);
     let aliveAllies = deck.filter(c => c.currentHp > 0);
     
     if (aliveAllies.length > 0) {
@@ -364,23 +337,47 @@ function processEnemyAction() {
         }
     }
     actorIndex++;
-    setTimeout(nextTurn, 400); 
+    setTimeout(nextTurn, 500); 
 }
 
 function dealDamage(attacker, target, baseDmg) {
     const affinity = getAffinity(attacker.elem, target.elem);
     const finalDmg = Math.floor(baseDmg * affinity);
     target.currentHp = Math.max(0, target.currentHp - finalDmg);
+
+    let targetEl;
+    if (enemies.includes(target)) {
+        let aliveIndex = enemies.filter(e => e.currentHp > 0 || e === target).indexOf(target);
+        targetEl = enemyArea.querySelectorAll('.card')[aliveIndex];
+    } else {
+        let aliveIndex = deck.filter(c => c.currentHp > 0 || c === target).indexOf(target);
+        targetEl = allyArea.querySelectorAll('.card')[aliveIndex];
+    }
+
+    if (targetEl) {
+        targetEl.classList.add('dmg-flash');
+        const popup = document.createElement("div");
+        popup.className = "dmg-popup";
+        popup.innerText = finalDmg;
+        if (affinity > 1.0) popup.style.color = "#ffcc00";
+        targetEl.appendChild(popup);
+
+        setTimeout(() => {
+            targetEl.classList.remove('dmg-flash');
+            popup.remove();
+            drawEnemy(); drawAllies();
+        }, 500);
+    }
+
     let logColor = affinity > 1.0 ? "#ffcc00" : (affinity < 1.0 ? "#aaaaaa" : "white");
     log(`${attacker.name}の攻撃！ ${target.name}に <span style="color:${logColor}">${finalDmg}</span> ダメージ`);
-    drawEnemy(); drawAllies();
+    if (target.currentHp <= 0) log(`<b style='color:red;'>${target.name} が戦闘不能！</b>`);
 }
 
 function addStatus(unit, type, level, turn) {
     if (!unit.status) unit.status = [];
     unit.status.push({ type, level, turn });
     log(`${unit.name} に ${type} 付与！`);
-    drawEnemy(); drawAllies();
 }
 
 function shuffleArray(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
