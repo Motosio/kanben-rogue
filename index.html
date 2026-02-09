@@ -14,7 +14,7 @@
     <h1>Card Rogue</h1>
     <button onclick="startGame()">スタート</button>
     <button>図鑑(未実装)</button>
-    <button onclick="alert('敵の弱点を突いて進もう！')">チュートリアル</button>
+    <button onclick="alert('属性の弱点を突いて勝利を目指そう！')">チュートリアル</button>
 </div>
 
 <div id="shop" class="hidden">
@@ -107,7 +107,7 @@ function getAffinity(aElem, tElem) {
     return 1.0;
 }
 
-// --- カードHTML生成 ---
+// --- カードHTML生成 (画像スペース確保版) ---
 function createCardHtml(c, isEnemy = false) {
     const stars = "★".repeat(c.rarity);
     const maxHp = isEnemy ? c.hp : (c.hp + (c.rank - 1) * 800);
@@ -121,6 +121,10 @@ function createCardHtml(c, isEnemy = false) {
         <div class="elem-circle elem-${c.elem}">${isEnemy ? "" : c.rank}</div>
         <div class="rarity-stars">${stars}</div>
         <div class="card-status-icons">${statusIcons}</div>
+        
+        <div class="card-img-space">
+            </div>
+
         <div class="card-name">${c.name}</div>
         <div class="card-atk">⚔️${atk}</div>
         <div class="card-hp">♥${currentHp}</div>
@@ -154,7 +158,7 @@ function drawShop(){
         let d=document.createElement("div");
         d.className=`card rarity-${c.rarity}`;
         d.draggable=true;
-        d.innerHTML=createCardHtml(c) + `<div style="position:absolute; top:40%; width:100%; text-align:center; font-size:10px;">${cost(c.rarity)}c</div>`;
+        d.innerHTML=createCardHtml(c);
         d.ondragstart=e=>e.dataTransfer.setData("shopIndex",i);
         shopCards.appendChild(d);
     });
