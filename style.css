@@ -5,53 +5,119 @@ body {
     font-family: 'Helvetica Neue', Arial, sans-serif;
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
-.hidden {
-    display: none !important;
-}
+.hidden { display: none !important; }
 
 /* カードデザイン */
 .card {
+    position: relative;
     width: 120px;
-    height: 155px;
-    background: #000;
+    height: 160px;
+    background: #222;
     border: 3px solid #fff;
     border-radius: 10px;
     margin: 5px;
-    padding: 8px;
-    display: inline-flex;
-    flex-direction: column;
-    justify-content: space-between;
+    display: inline-block;
     vertical-align: top;
     box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-    transition: transform 0.2s, background-color 0.2s;
-    position: relative;
+    transition: transform 0.2s;
 }
 
-/* スキルタグ */
+/* 左上の属性丸とランク */
+.elem-circle {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.4);
+    z-index: 10;
+}
+.elem-火 { background: #ff4400; box-shadow: 0 0 5px #ff4400; }
+.elem-水 { background: #0088ff; box-shadow: 0 0 5px #0088ff; }
+.elem-草 { background: #22cc44; box-shadow: 0 0 5px #22cc44; }
+.elem-光 { background: #ffffaa; color: #555; box-shadow: 0 0 5px #ffffaa; }
+.elem-闇 { background: #8800ff; box-shadow: 0 0 5px #8800ff; }
+
+/* 右上のレア度星 */
+.rarity-stars {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 10px;
+    color: #ffd700;
+    text-shadow: 1px 1px 2px #000;
+}
+
+/* 下部の名前 */
+.card-name {
+    position: absolute;
+    bottom: 30px;
+    width: 100%;
+    text-align: center;
+    font-size: 11px;
+    font-weight: bold;
+    background: rgba(0,0,0,0.7);
+    padding: 2px 0;
+}
+
+/* 左下の攻撃力 */
+.card-atk {
+    position: absolute;
+    bottom: 5px;
+    left: 8px;
+    font-size: 13px;
+    color: #ffaa66;
+    font-weight: bold;
+}
+
+/* 右下の体力 */
+.card-hp {
+    position: absolute;
+    bottom: 5px;
+    right: 8px;
+    font-size: 13px;
+    color: #ff6666;
+    font-weight: bold;
+}
+
+/* スキルゲージ */
 .skill-tag {
     position: absolute;
-    top: 2px;
-    left: 2px;
-    background: rgba(255, 255, 0, 0.85);
+    top: 35px;
+    left: 5px;
+    background: rgba(255, 255, 0, 0.9);
     color: black;
-    font-size: 10px;
-    font-weight: bold;
-    padding: 1px 4px;
+    font-size: 9px;
+    padding: 1px 3px;
     border-radius: 3px;
-    border: 1px solid #333;
-    z-index: 5;
+    font-weight: bold;
+}
+
+/* 状態異常 */
+.card-status-icons {
+    position: absolute;
+    top: 25px;
+    right: 5px;
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
 }
 
 /* レア度カラー */
-.rarity-3 { border-color: #007bff; box-shadow: 0 0 8px rgba(0, 123, 255, 0.6); }
-.rarity-4 { border-color: #ffd700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.7); }
+.rarity-3 { border-color: #007bff; }
+.rarity-4 { border-color: #ffd700; }
 .rarity-5 { 
     border-color: #fff;
-    border-image: linear-gradient(45deg, #e6e6fa, #add8e6, #ffffff, #e6e6fa) 1;
-    box-shadow: 0 0 15px rgba(230, 230, 250, 0.8);
     animation: shine 3s linear infinite;
 }
 
@@ -61,38 +127,24 @@ body {
     100% { filter: hue-rotate(0deg) brightness(1); }
 }
 
-/* --- ダメージ演出（振動と赤点滅） --- */
 .dmg-flash {
     background-color: #ff0000 !important;
     animation: shake 0.4s ease-in-out;
-    z-index: 10;
 }
 
 @keyframes shake {
-    0% { transform: translate(1px, 1px) scale(1.1); }
-    10% { transform: translate(-2px, -2px) scale(1.1); }
-    20% { transform: translate(-4px, 0px) scale(1.1); }
-    30% { transform: translate(4px, 2px) scale(1.1); }
-    40% { transform: translate(1px, -1px) scale(1.1); }
-    50% { transform: translate(-1px, 2px) scale(1.1); }
-    60% { transform: translate(-4px, 1px) scale(1.1); }
-    70% { transform: translate(4px, 1px) scale(1.1); }
-    80% { transform: translate(-1px, -1px) scale(1.1); }
-    90% { transform: translate(1px, 2px) scale(1.1); }
-    100% { transform: translate(0px, 0px) scale(1.0); }
+    0%, 100% { transform: translate(0,0); }
+    20% { transform: translate(-5px,0); }
+    40% { transform: translate(5px,0); }
+    60% { transform: translate(-5px,0); }
+    80% { transform: translate(5px,0); }
 }
 
-/* デッキ・ショップエリア */
-#deck { border: 2px solid #444; background: #1a1a1a; min-height: 170px; margin: 10px auto; width: 90%; display: flex; justify-content: center; align-items: center; border-radius: 15px; flex-wrap: wrap; }
-#sellZone { border: 2px dashed #ff4444; height: 80px; margin: 15px auto; width: 80%; display: flex; justify-content: center; align-items: center; border-radius: 10px; background: rgba(255, 68, 68, 0.1); }
-#sellZone::after { content: "ここにドラッグして売却"; color: #ffaaaa; }
+#deck { border: 2px solid #444; background: #1a1a1a; min-height: 180px; margin: 10px auto; width: 95%; display: flex; justify-content: center; align-items: center; border-radius: 15px; flex-wrap: wrap; }
+#sellZone { border: 2px dashed #ff4444; height: 60px; margin: 10px auto; width: 80%; display: flex; justify-content: center; align-items: center; border-radius: 10px; background: rgba(255, 68, 68, 0.1); }
+#log { height: 100px; background: rgba(0,0,0,0.8); border-bottom: 2px solid #444; overflow-y: auto; font-size: 0.8em; padding: 5px; text-align: left; }
+#enemyArea { height: 35vh; display: flex; justify-content: center; align-items: center; gap: 5px; }
+#allyArea { position: fixed; bottom: 10px; width: 100%; display: flex; justify-content: center; }
 
-/* ログ・バトル画面 */
-#log { height: 120px; background: rgba(0,0,0,0.8); border-bottom: 2px solid #444; overflow-y: auto; font-size: 0.85em; padding: 8px; text-align: left; }
-#enemyArea { height: 35vh; display: flex; justify-content: center; align-items: center; gap: 10px; }
-#allyArea { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: center; }
-
-button { padding: 10px 20px; cursor: pointer; margin: 5px; background: #333; color: white; border: 1px solid #777; border-radius: 5px; }
-.btn-battle { background: #28a745; font-weight: bold; font-size: 1.1em; border: none; }
-
-#clearScreen, #gameOverScreen { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+button { padding: 8px 16px; cursor: pointer; margin: 5px; background: #333; color: white; border: 1px solid #777; border-radius: 5px; }
+.btn-battle { background: #28a745; font-weight: bold; }
