@@ -54,13 +54,12 @@ const baseChars = [
     { name: "喜ヶ楽 スウ", rarity: 3, elem: "光", atk: 300, hp: 3000, 
       skill: { timing: "attack", interval: 3, action: (a, ts, ds) => {
           ts.forEach(t => addStatus(t, "麻痺", 1, 2));
-          log("<b style='color:#ffff00;'>スウの閃光！ 敵を麻痺させた！</b>");
+          log("<span style='color:#ffff00;'>相手チームを麻痺させた！</span>");
       }}},
     { name: "フューム･カタラグーン", rarity: 5, elem: "闇", atk: 500, hp: 5500, 
       skill: { timing: "start", action: (a, ts, ds) => {
           addStatus(a, "興奮", 3, 3);
           ts.forEach(t => addStatus(t, "拘束", 1, 1));
-          log("<b style='color:#ff00ff;'>フュームの威圧！ 敵を拘束した！</b>");
       }}},
     { name: "レオナ･フィボナッチ", rarity: 4, elem: "草", atk: 400, hp: 5000, 
       skill: { timing: "attack", interval: 3, action: (a, ts, ds) => {
@@ -68,76 +67,63 @@ const baseChars = [
               const maxHp = d.hp + (d.rank - 1) * 800;
               d.currentHp = Math.min(maxHp, d.currentHp + 1500);
           });
-          log("<b style='color:#00ff00;'>レオナの癒し！ 味方全員を回復！</b>");
+          log("<span style='color:#00ff00;'>味方全員の体力を回復！</span>");
       }}},
     { name: "葛飾 コウ", rarity: 5, elem: "火", atk: 700, hp: 5000, 
       skill: { timing: "attack", interval: 2, action: (a, ts, ds) => {
           addStatus(a, "興奮", 3, 3);
-          log("<b style='color:#ff4400;'>コウの闘志！ 攻撃力が大幅アップ！</b>");
       }}},
     { name: "役握 キョウ", rarity: 3, elem: "闇", atk: 200, hp: 2000, 
       skill: { timing: "attack", interval: 2, action: (a, ts, ds) => {
           let target = ts.filter(t=>t.currentHp>0)[0];
-          if(target) {
-              addStatus(target, "麻痺", 1, 2);
-              log(`<b style='color:#8800ff;'>キョウの呪縛！ ${target.name}を痺れさせた！</b>`);
-          }
+          if(target) addStatus(target, "麻痺", 1, 2);
       }}},
     { name: "リゲル", rarity: 3, elem: "水", atk: 300, hp: 3000, 
       skill: { timing: "start", action: (a, ts, ds) => {
           ds.forEach(d => addStatus(d, "興奮", 1, 2));
-          log("<b style='color:#00ffff;'>リゲルの号令！ 味方の攻撃力アップ！</b>");
       }}},
     { name: "加西 カフ", rarity: 4, elem: "水", atk: 400, hp: 5000, 
       skill: { timing: "attack", interval: 3, action: (a, ts, ds) => {
           let aliveTs = ts.filter(t=>t.currentHp>0);
           let target = aliveTs[Math.floor(Math.random() * aliveTs.length)];
-          if(target) {
-              addStatus(target, "拘束", 1, 2);
-              log(`<b style='color:#0088ff;'>カフの牢獄！ ${target.name}を拘束！</b>`);
-          }
+          if(target) addStatus(target, "拘束", 1, 2);
       }}},
     { name: "イグノア･フラクタル", rarity: 3, elem: "光", atk: 100, hp: 2000, 
       skill: { timing: "start", action: (a, ts, ds) => {
           ds.forEach(d => addStatus(d, "興奮", 2, 5));
-          log("<b style='color:#ffffaa;'>イグノアの祈り！ 興奮状態が付与された！</b>");
       }}},
     { name: "リーヴ･アレクサンダー", rarity: 5, elem: "火", atk: 999, hp: 9999 }
 ];
 
-// --- 敵データ ---
 const enemyTypes = {
     slime: { 
         name: "スライム", hp: 3500, atk: 700, elem: "水", 
-        skill: { name: "増殖", interval: 2, action: (e, ts, ds) => {
+        skill: { name: "増殖", interval: 2, action: (e) => {
             e.currentHp = Math.min(e.hp, e.currentHp + 1000);
-            log("<b style='color:#00ff00;'>スライムの増殖！ HPが1000回復した！</b>");
+            log("<span style='color:#00ff00;'>HPが1000回復した！</span>");
         }}
     },
     golem: { 
         name: "ゴーレム", hp: 6500, atk: 450, elem: "草",
-        skill: { name: "硬化", interval: 3, action: (e, ts, ds) => {
+        skill: { name: "硬化", interval: 3, action: (e) => {
             addStatus(e, "興奮", 1, 3); 
-            log("<b style='color:#ffaa00;'>ゴーレムの硬化！ 攻撃力が上昇！</b>");
+            log("<span style='color:#ffaa00;'>攻撃力が上昇した！</span>");
         }}
     },
     kurorekishi: { name: "黒歴史", hp: 8000, atk: 300, elem: "闇" },
     nouki: { name: "納期", hp: 15000, atk: 900, elem: "闇" }
 };
 
-// --- グローバル変数 ---
 let stage=1, coin=6, deck=[], shop=[];
 let enemies = [], nextEnemies = [];
 let battleQueue = [];
 
-// UI要素
 const ui_start = document.getElementById("start"), ui_shop = document.getElementById("shop"), ui_battle = document.getElementById("battle");
 const ui_clear = document.getElementById("clearScreen"), ui_over = document.getElementById("gameOverScreen");
 const shopCards=document.getElementById("shopCards"), deckDiv=document.getElementById("deck"), sellZone=document.getElementById("sellZone");
 const coinText=document.getElementById("coinText"), stageText=document.getElementById("stageText"), nextEnemyInfo=document.getElementById("nextEnemyInfo");
 const enemyArea=document.getElementById("enemyArea"), allyArea=document.getElementById("allyArea"), logDiv=document.getElementById("log");
 
-// --- システム関数 ---
 function hideAllScreens() { [ui_start, ui_shop, ui_battle, ui_clear, ui_over].forEach(div => div.classList.add("hidden")); }
 window.onload=()=>{ hideAllScreens(); ui_start.classList.remove("hidden"); };
 function startGame(){ stage=1; coin=6; deck=[]; hideAllScreens(); ui_shop.classList.remove("hidden"); refreshShop(); }
@@ -219,9 +205,7 @@ function buy(i){
     else { if(deck.length >= 5) return; coin -= p; deck.push(copyChar(c)); shop.splice(i,1); }
     coinText.innerText = coin; drawShop(); drawDeck();
 }
-
 function reroll(){ if(coin>0) { coin--; refreshShop(); } }
-
 function battle(){ if(deck.length>0) { hideAllScreens(); ui_battle.classList.remove("hidden"); startBattle(); } }
 
 function startBattle(){
@@ -241,7 +225,6 @@ function prepareTurn() {
     aliveEnemies.forEach(e => battleQueue.push({ type: "action", actor: e, side: "enemy" }));
 }
 
-// --- メインバトルロジック ---
 function nextTurn() {
     if (battleQueue.length === 0) {
         if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) {
@@ -249,18 +232,18 @@ function nextTurn() {
         } else {
             [...deck, ...enemies].forEach(u => applyStatus(u));
             prepareTurn();
-            // ログの区切り
             log("<hr style='border:0; border-top:1px solid #333;'>");
+            nextTurn(); // 自動で次のターンへ
         }
         return;
     }
 
     let task = battleQueue.shift();
     let actor = task.actor;
-
     if (actor.currentHp <= 0) return nextTurn();
 
     if (task.type === "skill") {
+        log(`<b>${actor.name}がスキルを発動した！</b>`);
         actor.skill.action(actor, enemies, deck);
         drawEnemy(); drawAllies();
     } 
@@ -271,24 +254,20 @@ function nextTurn() {
             return;
         }
 
-        // スキルチェック
-        if (actor.skill && (actor.skill.timing === "attack" || !actor.skill.timing)) {
+        // スキルカウント加算
+        if (actor.skill && actor.skill.interval) {
             actor.skillCount++;
             if (actor.skillCount >= actor.skill.interval) {
-                // ターゲット設定: 味方なら敵全体、敵なら味方全体を渡す
+                log(`<b>${actor.name}がスキルを発動した！</b>`);
                 const targets = (task.side === "ally") ? enemies : deck;
                 const friends = (task.side === "ally") ? deck : enemies;
                 actor.skill.action(actor, targets, friends);
-                actor.skillCount = 0; // 確実にリセット
+                actor.skillCount = 0; // ここでリセット
                 drawEnemy(); drawAllies();
             }
         }
 
-        // 通常攻撃
-        let aliveTargets = (task.side === "ally") ? 
-            enemies.filter(e => e.currentHp > 0) : 
-            deck.filter(c => c.currentHp > 0);
-
+        let aliveTargets = (task.side === "ally") ? enemies.filter(e => e.currentHp > 0) : deck.filter(c => c.currentHp > 0);
         if (aliveTargets.length > 0) {
             let target = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
             log(`${actor.name}の攻撃！`);
@@ -322,8 +301,7 @@ function dealDamage(attacker, target, baseDmg) {
         popup.className = "dmg-popup"; popup.innerText = finalDmg;
         targetEl.appendChild(popup);
         setTimeout(() => { 
-            targetEl.classList.remove('dmg-flash'); 
-            popup.remove(); 
+            targetEl.classList.remove('dmg-flash'); popup.remove(); 
             drawEnemy(); drawAllies(); 
             if(target.currentHp <= 0) log(`<b>${target.name}を撃破！</b>`);
         }, 400);
