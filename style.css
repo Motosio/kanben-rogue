@@ -10,7 +10,7 @@ body {
 
 .hidden { display: none !important; }
 
-/* カードデザイン */
+/* カード本体 */
 .card {
     position: relative;
     width: 120px;
@@ -23,9 +23,25 @@ body {
     vertical-align: top;
     box-shadow: 0 4px 8px rgba(0,0,0,0.5);
     transition: transform 0.2s;
+    overflow: hidden;
 }
 
-/* 左上の属性丸とランク */
+/* 画像スペース */
+.card-img-space {
+    position: absolute;
+    top: 20px;
+    left: 10px;
+    width: 100px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+}
+
+/* 属性丸(左上) */
 .elem-circle {
     position: absolute;
     top: 5px;
@@ -48,7 +64,7 @@ body {
 .elem-光 { background: #ffffaa; color: #555; box-shadow: 0 0 5px #ffffaa; }
 .elem-闇 { background: #8800ff; box-shadow: 0 0 5px #8800ff; }
 
-/* 右上のレア度星 */
+/* レア度星(右上) */
 .rarity-stars {
     position: absolute;
     top: 5px;
@@ -56,9 +72,10 @@ body {
     font-size: 10px;
     color: #ffd700;
     text-shadow: 1px 1px 2px #000;
+    z-index: 10;
 }
 
-/* 下部の名前 */
+/* 名前(中央下) */
 .card-name {
     position: absolute;
     bottom: 30px;
@@ -66,11 +83,12 @@ body {
     text-align: center;
     font-size: 11px;
     font-weight: bold;
-    background: rgba(0,0,0,0.7);
-    padding: 2px 0;
+    background: rgba(0,0,0,0.8);
+    padding: 3px 0;
+    z-index: 5;
 }
 
-/* 左下の攻撃力 */
+/* 攻撃力(左下) */
 .card-atk {
     position: absolute;
     bottom: 5px;
@@ -78,9 +96,10 @@ body {
     font-size: 13px;
     color: #ffaa66;
     font-weight: bold;
+    z-index: 10;
 }
 
-/* 右下の体力 */
+/* 体力(右下) */
 .card-hp {
     position: absolute;
     bottom: 5px;
@@ -88,6 +107,7 @@ body {
     font-size: 13px;
     color: #ff6666;
     font-weight: bold;
+    z-index: 10;
 }
 
 /* スキルゲージ */
@@ -101,6 +121,7 @@ body {
     padding: 1px 3px;
     border-radius: 3px;
     font-weight: bold;
+    z-index: 10;
 }
 
 /* 状態異常 */
@@ -111,9 +132,10 @@ body {
     display: flex;
     flex-direction: column;
     font-size: 12px;
+    z-index: 10;
 }
 
-/* レア度カラー */
+/* レア度ボーダーカラー */
 .rarity-3 { border-color: #007bff; }
 .rarity-4 { border-color: #ffd700; }
 .rarity-5 { 
@@ -127,11 +149,11 @@ body {
     100% { filter: hue-rotate(0deg) brightness(1); }
 }
 
+/* 戦闘エフェクト */
 .dmg-flash {
     background-color: #ff0000 !important;
     animation: shake 0.4s ease-in-out;
 }
-
 @keyframes shake {
     0%, 100% { transform: translate(0,0); }
     20% { transform: translate(-5px,0); }
@@ -140,6 +162,7 @@ body {
     80% { transform: translate(5px,0); }
 }
 
+/* レイアウトパーツ */
 #deck { border: 2px solid #444; background: #1a1a1a; min-height: 180px; margin: 10px auto; width: 95%; display: flex; justify-content: center; align-items: center; border-radius: 15px; flex-wrap: wrap; }
 #sellZone { border: 2px dashed #ff4444; height: 60px; margin: 10px auto; width: 80%; display: flex; justify-content: center; align-items: center; border-radius: 10px; background: rgba(255, 68, 68, 0.1); }
 #log { height: 100px; background: rgba(0,0,0,0.8); border-bottom: 2px solid #444; overflow-y: auto; font-size: 0.8em; padding: 5px; text-align: left; }
