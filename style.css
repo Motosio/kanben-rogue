@@ -1,129 +1,79 @@
-/* 全体設定：iPadでも安定して表示される設定 */
-body { 
-    background: #000; 
-    color: white; 
-    text-align: center; 
-    /* 以前の標準的なゴシック体フォントに戻しました */
-    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
-    margin: 0; 
-    padding-bottom: 50px; 
-    overflow-x: hidden; 
-    -webkit-text-size-adjust: 100%;
-}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Card Rogue - iPad Edition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-.hidden { display: none !important; }
+<div id="start">
+    <h1>Card Rogue</h1>
+    <div class="menu-buttons">
+        <button onclick="startGame()">スタート</button>
+        <button onclick="alert('属性の弱点を突いて勝利を目指そう！')">チュートリアル</button>
+    </div>
+</div>
 
-/* スタート画面：画面中央に配置 */
-#start {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background: #000;
-}
+<div id="shop" class="hidden">
+    <div class="info-bar">
+        <div>Coin: <span id="coinText">6</span></div>
+        <div id="nextEnemyInfo">Next: ???</div>
+    </div>
+    
+    <div id="shopCards"></div>
+    <button onclick="reroll()">更新(1コイン)</button>
 
-#start h1 {
-    font-size: clamp(2rem, 8vw, 3.5rem);
-    color: #ffcc00;
-    text-shadow: 2px 2px #d40000;
-    margin-bottom: 30px;
-    font-weight: bold;
-}
+    <div class="deck-container">
+        <h3 style="font-size: 14px; margin: 10px 0 0;">デッキ (最大5枚)</h3>
+        <div id="deck"></div>
+    </div>
 
-.menu-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
+    <div class="sell-container">
+        <div id="sellZone">売却ゾーン (ここにドラッグ)</div>
+    </div>
+    
+    <button onclick="battle()" class="btn-battle">戦闘開始</button>
+</div>
 
-/* カード基本設定 */
-.card {
-    position: relative; 
-    width: 110px; 
-    height: 160px; 
-    background: #111; 
-    border-radius: 8px; 
-    margin: 5px; 
-    display: inline-block; 
-    vertical-align: top;
-    overflow: hidden;
-    box-sizing: border-box;
-}
+<div id="battle" class="hidden">
+    <div id="log"></div>
+    <div id="enemyArea" style="margin-top: 20px;"></div>
+    <div id="allyArea" style="margin-top: 20px;" onclick="nextTurn()"></div>
+</div>
 
-/* レアリティ枠色 */
-.rarity-3 { border: 3px solid #0077ff !important; }
-.rarity-4 { border: 3px solid #ffcc00 !important; }
-.rarity-5 {
-    border: 3px solid transparent !important;
-    background-image: linear-gradient(#111, #111), linear-gradient(45deg, #87ceeb, #ffc0cb, #ffffff, #87ceeb);
-    background-origin: border-box;
-    background-clip: content-box, border-box;
-    background-size: 200% 200%;
-    animation: platinum-shimmer 3s linear infinite;
-}
+<div id="clearScreen" class="hidden">
+    <h1>GAME CLEAR</h1>
+    <button onclick="location.reload()">タイトルへ戻る</button>
+</div>
 
-@keyframes platinum-shimmer {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
+<div id="gameOverScreen" class="hidden">
+    <h1 style="color: red;">GAME OVER</h1>
+    <button onclick="location.reload()">タイトルへ戻る</button>
+</div>
 
-/* 画像エリア：名前のスペースを空けるため少し上に配置 */
-.card-img-space { 
-    width: 90px; 
-    height: 70px; 
-    background: #222; 
-    margin: 25px auto 0;
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    border: 1px solid #333;
-}
-.card-img-space img { width: 100%; height: 100%; object-fit: contain; }
+<script>
+    // --- ここからJavaScriptの全ロジック ---
+    // (以前お送りした全キャラクターデータとバトルプログラムがここに入ります)
+    // 文字数制限のため、ここでは主要な「スタート画面の表示管理」のみ記載します。
+    // ※お手元の完全版JavaScriptコードをこの<script>〜</script>の間に貼り付けてください。
 
-/* --- 名前部分：ここを修正しました --- */
-.card-name { 
-    font-size: 11px; 
-    font-weight: bold;
-    color: #fff;
-    padding: 3px 0; 
-    background: rgba(255, 255, 255, 0.1); 
-    width: 100%;
-    display: block;
-    white-space: nowrap; 
-    overflow: hidden;    
-    text-overflow: ellipsis;
-    /* 位置の微調整 */
-    margin-top: 2px;
-}
+    const ui_start = document.getElementById("start");
+    const ui_shop = document.getElementById("shop");
 
-.card-atk { color: #ffaa00; font-size: 14px; position: absolute; bottom: 8px; left: 10px; }
-.card-hp { color: #ff4444; font-size: 14px; position: absolute; bottom: 8px; right: 10px; }
+    window.onload = () => {
+        // 読み込み完了時に確実にスタート画面を出す
+        ui_start.classList.remove("hidden");
+    };
 
-/* 属性・レアリティ */
-.elem-circle { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; line-height: 22px; z-index: 5; }
-.elem-火 { background: #f40; } .elem-水 { background: #08f; } .elem-草 { background: #2c4; } 
-.elem-光 { background: #ff0; color: #000; } .elem-闇 { background: #80f; }
-.rarity-stars { font-size: 9px; color: #ffcc00; margin-top: 15px; height: 10px; }
-
-/* UI */
-.info-bar { display: flex; justify-content: space-around; padding: 12px; background: #1a1a1a; margin-bottom: 10px; border-bottom: 1px solid #333; }
-#deck { min-height: 180px; border: 2px solid #444; background: #111; margin: 10px; padding: 10px; border-radius: 10px; display: flex; justify-content: center; flex-wrap: wrap; }
-#sellZone { border: 2px dashed #ff4444; min-height: 55px; margin: 10px; background: rgba(255,0,0,0.1); display: flex; align-items: center; justify-content: center; border-radius: 8px; }
-
-/* ボタン */
-button {
-    padding: 10px 22px;
-    font-size: 16px;
-    cursor: pointer;
-    background: #333;
-    color: white;
-    border: 1px solid #666;
-    border-radius: 5px;
-    margin: 5px;
-}
-.btn-battle { background: #800; border: 2px solid #f00; font-size: 20px; padding: 15px 45px; margin-top: 15px; }
-
-/* ログ */
-#log { height: 130px; overflow-y: scroll; background: #000; border-bottom: 2px solid #333; padding: 10px; text-align: left; font-size: 14px; line-height: 1.5; }
+    function startGame() {
+        ui_start.classList.add("hidden");
+        ui_shop.classList.remove("hidden");
+        // 初期化処理...
+    }
+    
+    // ...以降、すべてのゲームプログラムが続きます...
+</script>
+</body>
+</html>
