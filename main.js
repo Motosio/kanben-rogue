@@ -1,9 +1,3 @@
-document.addEventListener("contextmenu", e=>{
-    if(e.target.tagName === "IMG"){
-        e.preventDefault();
-    }
-});
-
 // --- キャラクターデータ ---
 const baseChars = [
     { name: "喜ヶ楽 スウ", rarity: 3, elem: "光", atk: 300, hp: 3000, 
@@ -125,7 +119,7 @@ function createCardHtml(c, isEnemy = false) {
         <div class="elem-circle elem-${c.elem}">${isEnemy ? "" : (c.rank || 1)}</div>
         <div class="rarity-stars">${stars}</div>
         <div class="card-status-icons">${statusIcons}</div>
-        <div class="card-img-space"><img src="img/${c.name}.png" onerror="this.style.visibility='hidden'"></div>
+        <div class="card-img-space"><img src="img/${c.name}.png" draggable="false" onerror="this.style.visibility='hidden'"></div>
         <div class="card-name">${c.name}</div>
         <div class="card-atk">⚔️${atk}</div>
         <div class="card-hp">♥${currentHp}</div>
