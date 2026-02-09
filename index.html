@@ -120,13 +120,13 @@ const baseChars = [
       skill: { timing: "attack", interval: 1, action: (a, ts, ds) => {
           let types = ["麻痺", "拘束", "興奮", "毒"];
           ts.forEach(t => addStatus(t, types[Math.floor(Math.random()*4)], 5, 2));
-          log("<span style='color:#8800ff;'>カオス・エフェクト発動！</span>");
+          log("<span style='color:#8800ff;'>敵全員にランダムな効果を付与！</span>");
       }}},
     { name: "ナイト･ウォーダー", rarity: 5, elem: "光", atk: 700, hp: 7000, 
       skill: { timing: "attack", interval: 1, action: (a, ts, ds) => {
           let alive = ts.filter(e=>e.currentHp>0);
           let t = alive[Math.floor(Math.random()*alive.length)];
-          if(t) { addStatus(t, "拘束", 1, 2); log(`<span>${t.name}を光の鎖で封じた！</span>`); }
+          if(t) { addStatus(t, "拘束", 1, 2); log(`<span>${t.name}の行動を封じた！</span>`); }
       }}}
 ];
 
