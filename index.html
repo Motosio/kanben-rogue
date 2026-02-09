@@ -102,20 +102,36 @@ const enemyTypes = {
     nouki: { name: "納期", hp: 7000, atk: 600, elem: "闇", action: "nouki_skill" }
 };
 
+// --- グローバル変数 ---
 let stage=1, coin=6, deck=[], shop=[];
-let enemies = [], battlePhase = "idle", actorIndex = 0; 
-let nextEnemies = [];
+let enemies = [], battlePhase = "idle", actorIndex = 0, nextEnemies = [];
 
-// --- 要素取得の変数（ここが漏れていました） ---
-const startDiv = document.getElementById("start");
-const shopDiv = document.getElementById("shop");
-const battleDiv = document.getElementById("battle");
-const clearScreen = document.getElementById("clearScreen");
-const gameOverScreen = document.getElementById("gameOverScreen");
+// --- 要素取得 (変数名の衝突を避けるため ui_ 接頭辞を付与) ---
+const ui_start = document.getElementById("start");
+const ui_shop = document.getElementById("shop");
+const ui_battle = document.getElementById("battle");
+const ui_clear = document.getElementById("clearScreen");
+const ui_over = document.getElementById("gameOverScreen");
 
 const shopCards=document.getElementById("shopCards"), deckDiv=document.getElementById("deck"), sellZone=document.getElementById("sellZone");
 const coinText=document.getElementById("coinText"), stageText=document.getElementById("stageText"), nextEnemyInfo=document.getElementById("nextEnemyInfo");
 const enemyArea=document.getElementById("enemyArea"), allyArea=document.getElementById("allyArea"), logDiv=document.getElementById("log");
+
+// --- 画面切り替え ---
+function hideAllScreens() {
+    [ui_start, ui_shop, ui_battle, ui_clear, ui_over].forEach(div => {
+        if(div) div.classList.add("hidden");
+    });
+}
+
+window.onload=()=>{ hideAllScreens(); if(ui_start) ui_start.classList.remove("hidden"); };
+
+function startGame(){ 
+    stage=1; coin=6; deck=[]; 
+    hideAllScreens(); 
+    ui_shop.classList.remove("hidden"); 
+    refreshShop(); 
+}
 
 // --- システム関数 ---
 function log(t){ logDiv.innerHTML += t+"<br>"; logDiv.scrollTop = logDiv.scrollHeight; }
@@ -128,21 +144,11 @@ function getIcon(type){
         default: return "❓";
     }
 }
-// 画面非表示処理の修正
-function hideAllScreens() { 
-    [startDiv, shopDiv, battleDiv, clearScreen, gameOverScreen].forEach(div => {
-        if(div) div.classList.add("hidden");
-    }); 
-}
 
 function getAffinity(aElem, tElem) {
-    if (aElem === "火" && tElem === "草") return 1.5;
-    if (aElem === "草" && tElem === "水") return 1.5;
-    if (aElem === "水" && tElem === "火") return 1.5;
-    if (aElem === "草" && tElem === "火") return 0.5;
-    if (aElem === "水" && tElem === "草") return 0.5;
-    if (aElem === "火" && tElem === "水") return 0.5;
-    if ((aElem === "光" && tElem === "闇") || (aElem === "闇" && tElem === "光")) return 1.5;
+    const table = { "火": "草", "草": "水", "水": "火", "光": "闇", "闇": "光" };
+    if (table[aElem] === tElem) return 1.5;
+    if (table[tElem] === aElem) return 0.5;
     return 1.0;
 }
 
@@ -152,8 +158,7 @@ function createCardHtml(c, isEnemy = false) {
     const currentHp = c.currentHp !== undefined ? c.currentHp : maxHp;
     const atk = calcAtk(c);
     const skillInfo = (c.skill && c.skill.timing === "attack") ? `<div class="skill-tag">${c.skillCount || 0}/${c.skill.interval}</div>` : "";
-    const statusIcons = (c.status || []).map(s => `<span title="${s.type}">${getIcon(s.type)}${s.turn}</span>`).join("");
-    
+    const statusIcons = (c.status || []).map(s => `<span>${getIcon(s.type)}${s.turn}</span>`).join("");
     const imgPath = `img/${c.name}.png`;
 
     return `
@@ -170,30 +175,20 @@ function createCardHtml(c, isEnemy = false) {
     `;
 }
 
-window.onload=()=>{ hideAllScreens(); startDiv.classList.remove("hidden"); };
-function startGame(){ stage=1; coin=6; deck=[]; hideAllScreens(); shopDiv.classList.remove("hidden"); refreshShop(); }
-
 function backToTitle(){
     stage = 1; coin = 6; enemies = []; deck = []; shop = [];
-    hideAllScreens(); startDiv.classList.remove("hidden");
-    logDiv.innerHTML=""; coinText.innerText = coin; stageText.innerText = "Stage "+stage;
+    hideAllScreens(); ui_start.classList.remove("hidden");
+    logDiv.innerHTML=""; coinText.innerText = coin; stageText.innerText = "Stage 1";
     drawDeck(); shopCards.innerHTML="";
 }
 
 function generateNextEnemies() {
     let pool = [enemyTypes.slime, enemyTypes.golem];
-    let count = 0;
-    let fixedEnemies = [];
-    if (stage === 1) count = 1;
-    else if (stage >= 2 && stage <= 3) count = 2;
-    else if (stage === 4) count = 3;
-    else if (stage === 5) { fixedEnemies.push(enemyTypes.kurorekishi); count = 2; }
-    else if (stage >= 6 && stage <= 7) count = 4;
-    else if (stage >= 8 && stage <= 9) count = 5;
-    else if (stage === 10) { fixedEnemies.push(enemyTypes.nouki); count = 4; }
+    let count = (stage === 1) ? 1 : (stage <= 3) ? 2 : (stage <= 6) ? 3 : 4;
     let result = [];
-    fixedEnemies.forEach(fe => result.push({ ...fe, currentHp: fe.hp, status: [] }));
-    for(let i=0; i<count; i++) {
+    if(stage===5) result.push({...enemyTypes.kurorekishi, currentHp: 6000, status: []});
+    if(stage===10) result.push({...enemyTypes.nouki, currentHp: 7000, status: []});
+    while(result.length < count) {
         let et = pool[Math.floor(Math.random()*pool.length)];
         result.push({ ...et, currentHp: et.hp, status: [] });
     }
@@ -203,13 +198,12 @@ function generateNextEnemies() {
 function refreshShop(){
     stageText.innerText="Stage "+stage; coinText.innerText=coin; shop=[];
     nextEnemies = generateNextEnemies();
-    const enemyNames = nextEnemies.map(e => `${e.name}(${e.elem})`).join(", ");
-    nextEnemyInfo.innerText = `次: ${enemyNames}`;
-    let pool= (stage<=3) ? [3] : (stage<=6) ? [3,4] : [3,3,4,4,5];
+    nextEnemyInfo.innerText = `次: ${nextEnemies.map(e=>e.name).join(", ")}`;
+    let pool= (stage<=3) ? [3] : (stage<=6) ? [3,4] : [3,4,5];
     for(let i=0;i<6;i++){
-        let r=pool[Math.random()*pool.length|0];
+        let r=pool[Math.floor(Math.random()*pool.length)];
         let list=baseChars.filter(c=>c.rarity==r);
-        shop.push(copyChar(list[Math.random()*list.length|0]));
+        shop.push(copyChar(list[Math.floor(Math.random()*list.length)]));
     }
     drawShop(); drawDeck();
 }
@@ -219,8 +213,7 @@ function drawShop(){
     shop.forEach((c,i)=>{
         let d=document.createElement("div");
         d.className=`card rarity-${c.rarity}`;
-        d.draggable=true;
-        d.innerHTML=createCardHtml(c);
+        d.draggable=true; d.innerHTML=createCardHtml(c);
         d.ondragstart=e=>e.dataTransfer.setData("shopIndex",i);
         shopCards.appendChild(d);
     });
@@ -231,8 +224,7 @@ function drawDeck(){
     deck.forEach((c,i)=>{
         let d=document.createElement("div");
         d.className=`card rarity-${c.rarity}`;
-        d.draggable=true;
-        d.innerHTML=createCardHtml(c);
+        d.draggable=true; d.innerHTML=createCardHtml(c);
         d.ondragstart=e=>e.dataTransfer.setData("deckIndex",i);
         deckDiv.appendChild(d);
     });
@@ -252,34 +244,20 @@ sellZone.ondrop=e=>{
 function buy(i){
     let c = shop[i], p = cost(c.rarity), sameChar = deck.find(dc => dc.name === c.name);
     if(coin < p) return;
-    if(sameChar) {
-        if(sameChar.rank < 5) { coin -= p; sameChar.rank += 1; shop.splice(i,1); }
-        else { alert("最大ランクです！"); return; }
-    } else {
-        if(deck.length >= 5) { alert("デッキがいっぱいです！"); return; }
-        coin -= p; deck.push(copyChar(c)); shop.splice(i,1);
-    }
+    if(sameChar) { if(sameChar.rank < 5) { coin -= p; sameChar.rank += 1; shop.splice(i,1); } }
+    else { if(deck.length >= 5) return; coin -= p; deck.push(copyChar(c)); shop.splice(i,1); }
     coinText.innerText = coin; drawShop(); drawDeck();
 }
 
 function reroll(){ if(coin>0) { coin--; refreshShop(); } }
 
-function battle(){ if(deck.length>0) { hideAllScreens(); battleDiv.classList.remove("hidden"); startBattle(); } }
+function battle(){ if(deck.length>0) { hideAllScreens(); ui_battle.classList.remove("hidden"); startBattle(); } }
 
 function startBattle(){
     logDiv.innerHTML = "";
     enemies = JSON.parse(JSON.stringify(nextEnemies));
-    deck.forEach(c => { 
-        c.currentHp = c.hp + (c.rank - 1) * 800; 
-        c.status = []; 
-        c.skillCount = 0;
-    });
-    deck.forEach(c => {
-        if(c.skill && c.skill.timing === "start") {
-            log(`<b style='color:#00ffff;'>${c.name}がスキルを発動！</b>`);
-            c.skill.action(c, enemies, deck);
-        }
-    });
+    deck.forEach(c => { c.currentHp = c.hp + (c.rank - 1) * 800; c.status = []; c.skillCount = 0; });
+    deck.forEach(c => { if(c.skill && c.skill.timing === "start") c.skill.action(c, enemies, deck); });
     battlePhase = "ally"; actorIndex = 0; drawEnemy(); drawAllies();
 }
 
@@ -291,29 +269,19 @@ function nextTurn(){
 
 function processAllyAction() {
     if (actorIndex >= deck.length) { 
-        deck.forEach(c => applyStatus(c)); 
-        battlePhase = "enemy"; actorIndex = 0;
+        deck.forEach(c => applyStatus(c)); battlePhase = "enemy"; actorIndex = 0;
         drawAllies(); nextTurn(); return; 
     }
     let actor = deck[actorIndex];
-    if (actor.currentHp <= 0) { actorIndex++; processAllyAction(); return; }
-
-    if (isStunned(actor)) {
-        log(actor.name + " は拘束されている！");
-    } else {
-        let aliveEnemies = enemies.filter(e => e.currentHp > 0);
-        if (aliveEnemies.length > 0) {
-            let target = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
-            if (actor.skill && actor.skill.timing === "attack") {
-                actor.skillCount++;
-                if (actor.skillCount >= actor.skill.interval) {
-                    log(`<b style='color:#ffff00;'>${actor.name}がスキルを発動！</b>`);
-                    actor.skill.action(actor, aliveEnemies, deck);
-                    actor.skillCount = 0;
-                }
-            }
-            dealDamage(actor, target, calcAtk(actor));
+    if (actor.currentHp <= 0 || isStunned(actor)) { actorIndex++; processAllyAction(); return; }
+    let aliveEnemies = enemies.filter(e => e.currentHp > 0);
+    if (aliveEnemies.length > 0) {
+        let target = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+        if (actor.skill && actor.skill.timing === "attack") {
+            actor.skillCount++;
+            if (actor.skillCount >= actor.skill.interval) { actor.skill.action(actor, aliveEnemies, deck); actor.skillCount = 0; }
         }
+        dealDamage(actor, target, calcAtk(actor));
     }
     actorIndex++; checkBattleEnd();
 }
@@ -321,40 +289,22 @@ function processAllyAction() {
 function processEnemyAction() {
     let aliveEnemies = enemies.filter(e => e.currentHp > 0);
     if (actorIndex >= aliveEnemies.length) {
-        aliveEnemies.forEach(e => applyStatus(e));
-        battlePhase = "ally"; actorIndex = 0; drawEnemy(); drawAllies();
-        checkBattleEnd(); return;
+        aliveEnemies.forEach(e => applyStatus(e)); battlePhase = "ally"; actorIndex = 0; 
+        drawEnemy(); drawAllies(); checkBattleEnd(); return;
     }
     let enemyActor = aliveEnemies[actorIndex];
     let aliveAllies = deck.filter(c => c.currentHp > 0);
     if (aliveAllies.length > 0) {
-        let atk = calcAtk(enemyActor);
-        switch (enemyActor.action) {
-            case "slime_skill":
-                let t1 = aliveAllies[Math.floor(Math.random() * aliveAllies.length)];
-                dealDamage(enemyActor, t1, atk); addStatus(t1, "毒", 1, 2); addStatus(t1, "麻痺", 1, 2); break;
-            case "golem_skill":
-                shuffleArray([...aliveAllies]).slice(0, 3).forEach(t => dealDamage(enemyActor, t, atk));
-                if (Math.random() < 0.5) addStatus(enemyActor, "興奮", 1, 2); break;
-            case "kuro_skill":
-                aliveAllies.forEach(t => dealDamage(enemyActor, t, atk));
-                shuffleArray([...aliveAllies]).slice(0, 2).forEach(t => addStatus(t, "毒", 3, 2)); break;
-            case "nouki_skill":
-                shuffleArray([...aliveAllies]).slice(0, 2).forEach(t => dealDamage(enemyActor, t, atk));
-                if (Math.random() < 0.5) addStatus(aliveAllies[Math.floor(Math.random() * aliveAllies.length)], "拘束", 1, 2); break;
-            default:
-                dealDamage(enemyActor, aliveAllies[Math.floor(Math.random() * aliveAllies.length)], atk);
-        }
+        dealDamage(enemyActor, aliveAllies[Math.floor(Math.random() * aliveAllies.length)], calcAtk(enemyActor));
     }
-    actorIndex++;
-    setTimeout(nextTurn, 500); 
+    actorIndex++; setTimeout(nextTurn, 500); 
 }
 
 function dealDamage(attacker, target, baseDmg) {
     const affinity = getAffinity(attacker.elem, target.elem);
     const finalDmg = Math.floor(baseDmg * affinity);
     target.currentHp = Math.max(0, target.currentHp - finalDmg);
-
+    
     let targetEl;
     if (enemies.includes(target)) {
         let aliveIndex = enemies.filter(e => e.currentHp > 0 || e === target).indexOf(target);
@@ -367,39 +317,25 @@ function dealDamage(attacker, target, baseDmg) {
     if (targetEl) {
         targetEl.classList.add('dmg-flash');
         const popup = document.createElement("div");
-        popup.className = "dmg-popup";
-        popup.innerText = finalDmg;
-        if (affinity > 1.0) popup.style.color = "#ffcc00";
+        popup.className = "dmg-popup"; popup.innerText = finalDmg;
         targetEl.appendChild(popup);
-
-        setTimeout(() => {
-            targetEl.classList.remove('dmg-flash');
-            popup.remove();
-            drawEnemy(); drawAllies();
-        }, 500);
+        setTimeout(() => { targetEl.classList.remove('dmg-flash'); popup.remove(); drawEnemy(); drawAllies(); }, 500);
     }
 }
 
-function addStatus(unit, type, level, turn) {
-    if (!unit.status) unit.status = [];
-    unit.status.push({ type, level, turn });
-    log(`${unit.name} に ${type} 付与！`);
-}
-
-function shuffleArray(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function addStatus(unit, type, level, turn) { if (!unit.status) unit.status = []; unit.status.push({ type, level, turn }); }
 
 function checkBattleEnd() {
-    if (enemies.every(e => e.currentHp <= 0)) { log("<b style='color:yellow;'>勝利！ タップで次へ</b>"); battlePhase = "end"; }
-    else if (deck.every(c => c.currentHp <= 0)) { log("<b style='color:red;'>敗北...</b>"); battlePhase = "end"; }
+    if (enemies.every(e => e.currentHp <= 0)) { log("勝利！タップで進む"); battlePhase = "end"; }
+    else if (deck.every(c => c.currentHp <= 0)) { log("敗北..."); battlePhase = "end"; }
 }
 
 function finishBattle() {
     if (enemies.every(e => e.currentHp <= 0)) {
         coin += 5; stage++;
-        deck.forEach(c => { c.currentHp = c.hp + (c.rank - 1) * 800; c.status = []; });
-        if (stage > 10) { hideAllScreens(); clearScreen.classList.remove("hidden"); }
-        else { hideAllScreens(); shopDiv.classList.remove("hidden"); drawDeck(); refreshShop(); }
-    } else { hideAllScreens(); gameOverScreen.classList.remove("hidden"); }
+        if (stage > 10) { hideAllScreens(); ui_clear.classList.remove("hidden"); }
+        else { hideAllScreens(); ui_shop.classList.remove("hidden"); refreshShop(); }
+    } else { hideAllScreens(); ui_over.classList.remove("hidden"); }
 }
 
 function calcAtk(unit){
@@ -411,30 +347,24 @@ function calcAtk(unit){
 
 function drawEnemy(){
     enemyArea.innerHTML = "";
-    enemies.forEach(e => {
-        if(e.currentHp <= 0) return;
-        let d = document.createElement("div");
-        d.className = "card rarity-4";
-        d.innerHTML = createCardHtml(e, true);
-        enemyArea.appendChild(d);
-    });
+    enemies.forEach(e => { if(e.currentHp > 0) {
+        let d = document.createElement("div"); d.className = "card rarity-4";
+        d.innerHTML = createCardHtml(e, true); enemyArea.appendChild(d);
+    }});
 }
 
 function drawAllies(){
     allyArea.innerHTML="";
     deck.forEach(c=>{ if(c.currentHp>0) {
-        let d = document.createElement("div");
-        d.className = `card rarity-${c.rarity}`;
-        d.innerHTML = createCardHtml(c);
-        allyArea.appendChild(d);
+        let d = document.createElement("div"); d.className = `card rarity-${c.rarity}`;
+        d.innerHTML = createCardHtml(c); allyArea.appendChild(d);
     }});
 }
 
 function isStunned(c){ return c.status && c.status.some(s=>s.type==="拘束"); }
-
 function applyStatus(unit){
     if(!unit || !unit.status) return;
-    unit.status.forEach((s,i)=>{ if(s.type==="毒"){ unit.currentHp = Math.max(0, unit.currentHp - s.level*100); } s.turn--; });
+    unit.status.forEach(s=>{ if(s.type==="毒") unit.currentHp = Math.max(0, unit.currentHp - 100); s.turn--; });
     unit.status = unit.status.filter(s => s.turn > 0);
 }
 </script>
