@@ -10,163 +10,145 @@ body {
 
 .hidden { display: none !important; }
 
-/* カード本体 */
 .card {
     position: relative;
-    width: 120px;
-    height: 160px;
+    width: 110px;
+    height: 150px;
     background: #222;
     border: 3px solid #fff;
     border-radius: 10px;
-    margin: 5px;
+    margin: 3px;
     display: inline-block;
     vertical-align: top;
     box-shadow: 0 4px 8px rgba(0,0,0,0.5);
     transition: transform 0.2s;
-    overflow: hidden;
+    overflow: visible; /* ダメージ数字が外に出るように */
 }
 
-/* 画像スペース */
 .card-img-space {
     position: absolute;
     top: 20px;
     left: 10px;
-    width: 100px;
-    height: 80px;
+    width: 90px;
+    height: 70px;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 5px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     z-index: 1;
 }
 
-/* 属性丸(左上) */
 .elem-circle {
     position: absolute;
     top: 5px;
     left: 5px;
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: bold;
-    color: white;
-    border: 1px solid rgba(255,255,255,0.4);
     z-index: 10;
 }
-.elem-火 { background: #ff4400; box-shadow: 0 0 5px #ff4400; }
-.elem-水 { background: #0088ff; box-shadow: 0 0 5px #0088ff; }
-.elem-草 { background: #22cc44; box-shadow: 0 0 5px #22cc44; }
-.elem-光 { background: #ffffaa; color: #555; box-shadow: 0 0 5px #ffffaa; }
-.elem-闇 { background: #8800ff; box-shadow: 0 0 5px #8800ff; }
+.elem-火 { background: #ff4400; }
+.elem-水 { background: #0088ff; }
+.elem-草 { background: #22cc44; }
+.elem-光 { background: #ffffaa; color: #555; }
+.elem-闇 { background: #8800ff; }
 
-/* レア度星(右上) */
 .rarity-stars {
     position: absolute;
     top: 5px;
     right: 5px;
-    font-size: 10px;
+    font-size: 8px;
     color: #ffd700;
-    text-shadow: 1px 1px 2px #000;
     z-index: 10;
 }
 
-/* 名前(中央下) */
 .card-name {
     position: absolute;
-    bottom: 30px;
+    bottom: 28px;
     width: 100%;
-    text-align: center;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: bold;
-    background: rgba(0,0,0,0.8);
-    padding: 3px 0;
+    background: rgba(0,0,0,0.7);
     z-index: 5;
 }
 
-/* 攻撃力(左下) */
-.card-atk {
-    position: absolute;
-    bottom: 5px;
-    left: 8px;
-    font-size: 13px;
-    color: #ffaa66;
-    font-weight: bold;
-    z-index: 10;
-}
+.card-atk { position: absolute; bottom: 5px; left: 8px; font-size: 12px; color: #ffa; z-index: 10; }
+.card-hp { position: absolute; bottom: 5px; right: 8px; font-size: 12px; color: #f66; z-index: 10; }
 
-/* 体力(右下) */
-.card-hp {
-    position: absolute;
-    bottom: 5px;
-    right: 8px;
-    font-size: 13px;
-    color: #ff6666;
-    font-weight: bold;
-    z-index: 10;
-}
-
-/* スキルゲージ */
 .skill-tag {
     position: absolute;
-    top: 35px;
+    top: 32px;
     left: 5px;
-    background: rgba(255, 255, 0, 0.9);
-    color: black;
-    font-size: 9px;
+    background: #ff0;
+    color: #000;
+    font-size: 8px;
     padding: 1px 3px;
     border-radius: 3px;
-    font-weight: bold;
     z-index: 10;
 }
 
-/* 状態異常 */
 .card-status-icons {
     position: absolute;
-    top: 25px;
+    top: 22px;
     right: 5px;
     display: flex;
     flex-direction: column;
-    font-size: 12px;
+    font-size: 10px;
     z-index: 10;
 }
 
-/* レア度ボーダーカラー */
 .rarity-3 { border-color: #007bff; }
 .rarity-4 { border-color: #ffd700; }
-.rarity-5 { 
-    border-color: #fff;
-    animation: shine 3s linear infinite;
-}
+.rarity-5 { border-color: #fff; animation: shine 2s linear infinite; }
 
 @keyframes shine {
-    0% { filter: hue-rotate(0deg) brightness(1); }
-    50% { filter: hue-rotate(10deg) brightness(1.2); }
-    100% { filter: hue-rotate(0deg) brightness(1); }
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.5); }
 }
 
-/* 戦闘エフェクト */
+/* 被ダメ演出 */
 .dmg-flash {
-    background-color: #ff0000 !important;
-    animation: shake 0.4s ease-in-out;
+    animation: shake 0.4s ease-in-out !important;
+    box-shadow: 0 0 20px #f00 !important;
+    border-color: #f00 !important;
+    z-index: 100;
 }
+
 @keyframes shake {
     0%, 100% { transform: translate(0,0); }
-    20% { transform: translate(-5px,0); }
-    40% { transform: translate(5px,0); }
-    60% { transform: translate(-5px,0); }
-    80% { transform: translate(5px,0); }
+    20% { transform: translate(-8px, 4px); }
+    40% { transform: translate(8px, -4px); }
+    60% { transform: translate(-8px, -4px); }
+    80% { transform: translate(8px, 4px); }
 }
 
-/* レイアウトパーツ */
-#deck { border: 2px solid #444; background: #1a1a1a; min-height: 180px; margin: 10px auto; width: 95%; display: flex; justify-content: center; align-items: center; border-radius: 15px; flex-wrap: wrap; }
-#sellZone { border: 2px dashed #ff4444; height: 60px; margin: 10px auto; width: 80%; display: flex; justify-content: center; align-items: center; border-radius: 10px; background: rgba(255, 68, 68, 0.1); }
-#log { height: 100px; background: rgba(0,0,0,0.8); border-bottom: 2px solid #444; overflow-y: auto; font-size: 0.8em; padding: 5px; text-align: left; }
-#enemyArea { height: 35vh; display: flex; justify-content: center; align-items: center; gap: 5px; }
+.dmg-popup {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    font-weight: bold;
+    color: #ff3300;
+    text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+    z-index: 1000;
+    pointer-events: none;
+    animation: dmg-float 0.8s ease-out forwards;
+}
+
+@keyframes dmg-float {
+    0% { opacity: 1; transform: translate(-50%, -20%) scale(0.5); }
+    20% { opacity: 1; transform: translate(-50%, -80%) scale(1.5); }
+    100% { opacity: 0; transform: translate(-50%, -150%) scale(1.2); }
+}
+
+#deck { border: 2px solid #444; background: #1a1a1a; min-height: 170px; margin: 5px auto; width: 95%; display: flex; justify-content: center; align-items: center; border-radius: 15px; flex-wrap: wrap; }
+#sellZone { border: 2px dashed #ff4444; height: 50px; margin: 5px auto; width: 80%; display: flex; justify-content: center; align-items: center; border-radius: 10px; background: rgba(255, 68, 68, 0.1); }
+#log { height: 90px; background: rgba(0,0,0,0.8); border-bottom: 2px solid #444; overflow-y: auto; font-size: 0.8em; padding: 5px; text-align: left; }
+#enemyArea { height: 35vh; display: flex; justify-content: center; align-items: center; gap: 5px; padding-top: 20px; }
 #allyArea { position: fixed; bottom: 10px; width: 100%; display: flex; justify-content: center; }
 
 button { padding: 8px 16px; cursor: pointer; margin: 5px; background: #333; color: white; border: 1px solid #777; border-radius: 5px; }
