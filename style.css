@@ -1,14 +1,22 @@
-body { background: #000; color: white; text-align: center; font-family: 'Courier New', Courier, monospace; margin: 0; padding-bottom: 50px; overflow-x: hidden; }
-.hidden { display: none !important; }
-
-.card img {
-    pointer-events: none;
-    -webkit-user-drag: none;
+/* 全体を選択不可にする */
+body {
+    -webkit-user-select: none;
+    user-select: none;
     -webkit-touch-callout: none;
 }
 
-img {
+/* カード内は全部選択不可 */
+.card, .card * {
+    user-select: none;
+    -webkit-user-select: none;
     -webkit-touch-callout: none;
+}
+
+/* 画像は完全に触れない物体に */
+.card img {
+    pointer-events: none;
+    -webkit-user-drag: none;
+    user-select: none;
 }
 
 /* カード基本設定 */
