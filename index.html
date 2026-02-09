@@ -167,19 +167,47 @@ function backToTitle(){
 }
 
 function generateNextEnemies() {
-    let pool = []; let count = 1;
-    if (stage <= 4) { count = 2; pool = [enemyTypes.slime, enemyTypes.golem]; }
-    else if (stage === 5) { count = 1; pool = [enemyTypes.kurorekishi]; }
-    else if (stage <= 9) { count = 3; pool = [enemyTypes.slime, enemyTypes.golem]; }
-    else { count = 1; pool = [enemyTypes.nouki]; }
+    let pool = [enemyTypes.slime, enemyTypes.golem]; // 基本の雑魚プール
+    let count = 0;
+    let fixedEnemies = []; // ボスなどの固定枠
+
+    if (stage === 1) {
+        count = 1;
+    } 
+    else if (stage >= 2 && stage <= 3) {
+        count = 2;
+    } 
+    else if (stage === 4) {
+        count = 3;
+    } 
+    else if (stage === 5) {
+        fixedEnemies.push(enemyTypes.kurorekishi); // 黒歴史 確定
+        count = 2; // + 雑魚2体
+    } 
+    else if (stage >= 6 && stage <= 7) {
+        count = 4;
+    } 
+    else if (stage >= 8 && stage <= 9) {
+        count = 5;
+    } 
+    else if (stage === 10) {
+        fixedEnemies.push(enemyTypes.nouki); // 納期 確定
+        count = 4; // + 雑魚4体
+    }
+
     let result = [];
+    // 固定枠の追加
+    fixedEnemies.forEach(fe => {
+        result.push({ ...fe, currentHp: fe.hp, status: [] });
+    });
+    // ランダム枠の追加
     for(let i=0; i<count; i++) {
         let et = pool[Math.floor(Math.random()*pool.length)];
         result.push({ ...et, currentHp: et.hp, status: [] });
     }
+    
     return result;
 }
-
 function refreshShop(){
     stageText.innerText="Stage "+stage; coinText.innerText=coin; shop=[];
     nextEnemies = generateNextEnemies();
