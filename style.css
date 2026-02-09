@@ -1,33 +1,33 @@
-/* 全体設定 */
+/* 全体設定：iPadでも崩れないよう調整 */
 body { 
     background: #000; 
     color: white; 
     text-align: center; 
-    font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; 
-    font-weight: bold;
+    /* フォントを標準的なゴシック体に戻し、太さを調整 */
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
     margin: 0; 
     padding-bottom: 50px; 
     overflow-x: hidden; 
+    -webkit-text-size-adjust: 100%; /* iOSでの勝手な文字サイズ変更を防止 */
 }
 
 .hidden { display: none !important; }
 
-/* スタート画面を中央に配置 */
+/* スタート画面：中央配置を維持 */
 #start {
     height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background: radial-gradient(circle, #222 0%, #000 100%);
+    background: #000;
 }
 
 #start h1 {
-    font-size: 4rem;
+    font-size: clamp(2rem, 8vw, 4rem); /* 画面サイズに合わせて可変 */
     color: #ffcc00;
-    text-shadow: 4px 4px #d40000;
-    margin-bottom: 40px;
-    letter-spacing: 4px;
+    text-shadow: 2px 2px #d40000;
+    margin-bottom: 30px;
 }
 
 .menu-buttons {
@@ -48,28 +48,17 @@ body {
     vertical-align: top;
     overflow: hidden;
     box-sizing: border-box;
+    -webkit-transform: translateZ(0); /* iPadでの描画バグ防止 */
 }
 
-/* --- レアリティ枠色 --- */
-/* 星3: 青 */
-.rarity-3 { 
-    border: 4px solid #0077ff !important; 
-    box-shadow: 0 0 10px rgba(0, 119, 255, 0.7); 
-}
-
-/* 星4: 金 */
-.rarity-4 { 
-    border: 4px solid #ffcc00 !important; 
-    box-shadow: 0 0 12px rgba(255, 204, 0, 0.7); 
-}
-
-/* 星5: プラチナ (水色・ピンク・白のグラデーション) */
+/* レアリティ枠色 */
+.rarity-3 { border: 3px solid #0077ff !important; }
+.rarity-4 { border: 3px solid #ffcc00 !important; }
 .rarity-5 {
-    border: 4px solid transparent !important;
+    border: 3px solid transparent !important;
     background-image: linear-gradient(#111, #111), linear-gradient(45deg, #87ceeb, #ffc0cb, #ffffff, #87ceeb);
     background-origin: border-box;
     background-clip: content-box, border-box;
-    box-shadow: 0 0 18px rgba(255, 255, 255, 0.9);
     background-size: 200% 200%;
     animation: platinum-shimmer 3s linear infinite;
 }
@@ -90,42 +79,36 @@ body {
     justify-content: center; 
     align-items: center; 
     border: 1px solid #333;
-    overflow: hidden;
 }
 .card-img-space img { width: 100%; height: 100%; object-fit: contain; }
 
-/* カード内テキスト */
-.card-name { font-size: 10px; padding: 2px; background: rgba(255,255,255,0.1); white-space: nowrap; overflow: hidden; }
+/* カード内テキスト：以前のサイズ感に */
+.card-name { font-size: 10px; font-weight: normal; padding: 2px; background: rgba(255,255,255,0.1); }
 .card-atk { color: #ffaa00; font-size: 14px; position: absolute; bottom: 5px; left: 8px; }
 .card-hp { color: #ff4444; font-size: 14px; position: absolute; bottom: 5px; right: 8px; }
 
-/* 属性・レアリティ星・スキル */
-.elem-circle { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; line-height: 22px; z-index: 5; }
+/* 属性・レアリティ */
+.elem-circle { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; font-size: 10px; line-height: 20px; z-index: 5; }
 .elem-火 { background: #f40; } .elem-水 { background: #08f; } .elem-草 { background: #2c4; } 
 .elem-光 { background: #ff0; color: #000; } .elem-闇 { background: #80f; }
 .rarity-stars { font-size: 8px; color: #ffcc00; margin-top: 18px; }
-.skill-tag { position: absolute; top: 3px; right: 3px; background: #ff0; color: #000; font-size: 9px; padding: 1px 4px; border-radius: 4px; z-index: 5; }
-.card-status-icons { position: absolute; top: 30px; right: 2px; display: flex; flex-direction: column; font-size: 10px; z-index: 5; background: rgba(0,0,0,0.5); }
 
 /* UI・ショップレイアウト */
-.info-bar { display: flex; justify-content: space-around; padding: 15px; background: #1a1a1a; margin-bottom: 15px; border-bottom: 2px solid #333; }
-#deck { min-height: 185px; border: 3px solid #444; background: #111; margin: 15px; padding: 15px; border-radius: 12px; display: flex; justify-content: center; flex-wrap: wrap; }
-#sellZone { border: 2px dashed #ff4444; min-height: 60px; margin: 15px; background: rgba(255,0,0,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.info-bar { display: flex; justify-content: space-around; padding: 10px; background: #1a1a1a; margin-bottom: 10px; border-bottom: 1px solid #333; }
+#deck { min-height: 175px; border: 2px solid #444; background: #111; margin: 10px; padding: 10px; border-radius: 8px; display: flex; justify-content: center; flex-wrap: wrap; }
+#sellZone { border: 2px dashed #ff4444; min-height: 50px; margin: 10px; background: rgba(255,0,0,0.1); display: flex; align-items: center; justify-content: center; }
 
-/* ボタンデザイン */
+/* ボタン */
 button {
-    padding: 12px 25px;
-    font-size: 18px;
-    font-weight: bold;
+    padding: 10px 20px;
+    font-size: 16px;
     cursor: pointer;
-    background: #222;
+    background: #333;
     color: white;
-    border: 2px solid #666;
-    border-radius: 6px;
-    transition: 0.2s;
+    border: 1px solid #666;
+    border-radius: 4px;
 }
-button:hover { background: #444; border-color: #fff; transform: translateY(-2px); }
-.btn-battle { background: #900; border-color: #f00; font-size: 22px; padding: 18px 50px; margin-top: 20px; box-shadow: 0 0 15px rgba(255,0,0,0.4); }
+.btn-battle { background: #800; border: 2px solid #f00; font-size: 20px; padding: 15px 40px; }
 
-/* バトルログ */
-#log { height: 130px; overflow-y: scroll; background: #000; border-bottom: 3px solid #333; padding: 10px; text-align: left; font-size: 14px; line-height: 1.6; }
+/* ログ */
+#log { height: 120px; overflow-y: scroll; background: #000; border-bottom: 2px solid #333; padding: 10px; text-align: left; font-size: 13px; font-weight: normal; }
