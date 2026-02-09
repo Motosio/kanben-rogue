@@ -268,15 +268,59 @@ function nextTurn() {
     }
 }
 
-function dealDamage(a, t, d) {
-    const af = getAffinity(a.elem, t.elem); const fd = Math.floor(d * af);
-    t.currentHp = Math.max(0, t.currentHp - fd);
-    let color = af > 1 ? "#ff4444" : af < 1 ? "#aaa" : "#fff";
-    log(`<span style="color:${color}">${t.name}に ${fd} ⚡</span>`);
-    drawEnemy(); drawAllies();
-    if(t.currentHp <= 0) log(`<b>${t.name}を撃破！</b>`);
+function showDamageNumber(targetDiv, dmg){
+    const num = document.createElement("div");
+    num.className = "damage-number";
+    num.textContent = dmg;
+
+    const rect = targetDiv.getBoundingClientRect();
+    num.style.left = rect.left + rect.width/2 + "px";
+    num.style.top = rect.top + "px";
+
+    document.body.appendChild(num);
+
+    setTimeout(()=>num.remove(),900);
 }
 
+function getCardDivByName(name){
+    const cards = document.querySelectorAll(".card-name");
+    for(let el of cards){
+        if(el.textContent === name){
+            return el.closest(".card");
+        }
+    }
+    return null;
+}
+
+function dealDamage(a, t, d) {
+    const af = getAffinity(a.elem, t.elem);
+    const fd = Math.floor(d * af);
+
+    t.currentHp = Math.max(0, t.currentHp - fd);
+
+    let color = af > 1 ? "#ff4444" : af < 1 ? "#aaa" : "#fff";
+    log(`<span style="color:${color}">${t.name}に ${fd} ⚡</span>`);
+
+    drawEnemy();
+    drawAllies();
+
+    // ▼ ここから演出
+    setTimeout(()=>{
+        const cardDiv = getCardDivByName(t.name);
+        if(cardDiv){
+            cardDiv.classList.add("damage-flash","shake");
+            showDamageNumber(cardDiv, fd);
+
+            setTimeout(()=>{
+                cardDiv.classList.remove("damage-flash","shake");
+            },300);
+        }
+    },10);
+
+    if(t.currentHp <= 0){
+        log(`<b>${t.name}を撃破！</b>`);
+    }
+}
 function addStatus(u, type, level, turn) {
     if (!u.status) u.status = [];
     let s = u.status.find(s => s.type === type);
