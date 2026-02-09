@@ -106,6 +106,13 @@ let stage=1, coin=6, deck=[], shop=[];
 let enemies = [], battlePhase = "idle", actorIndex = 0; 
 let nextEnemies = [];
 
+// --- 要素取得の変数（ここが漏れていました） ---
+const startDiv = document.getElementById("start");
+const shopDiv = document.getElementById("shop");
+const battleDiv = document.getElementById("battle");
+const clearScreen = document.getElementById("clearScreen");
+const gameOverScreen = document.getElementById("gameOverScreen");
+
 const shopCards=document.getElementById("shopCards"), deckDiv=document.getElementById("deck"), sellZone=document.getElementById("sellZone");
 const coinText=document.getElementById("coinText"), stageText=document.getElementById("stageText"), nextEnemyInfo=document.getElementById("nextEnemyInfo");
 const enemyArea=document.getElementById("enemyArea"), allyArea=document.getElementById("allyArea"), logDiv=document.getElementById("log");
@@ -121,7 +128,12 @@ function getIcon(type){
         default: return "❓";
     }
 }
-function hideAllScreens() { [start, shop, battle, clearScreen, gameOverScreen].forEach(div => div.classList.add("hidden")); }
+// 画面非表示処理の修正
+function hideAllScreens() { 
+    [startDiv, shopDiv, battleDiv, clearScreen, gameOverScreen].forEach(div => {
+        if(div) div.classList.add("hidden");
+    }); 
+}
 
 function getAffinity(aElem, tElem) {
     if (aElem === "火" && tElem === "草") return 1.5;
@@ -142,7 +154,6 @@ function createCardHtml(c, isEnemy = false) {
     const skillInfo = (c.skill && c.skill.timing === "attack") ? `<div class="skill-tag">${c.skillCount || 0}/${c.skill.interval}</div>` : "";
     const statusIcons = (c.status || []).map(s => `<span title="${s.type}">${getIcon(s.type)}${s.turn}</span>`).join("");
     
-    // 画像パスの指定（img/名前.png）
     const imgPath = `img/${c.name}.png`;
 
     return `
@@ -151,7 +162,7 @@ function createCardHtml(c, isEnemy = false) {
         <div class="rarity-stars">${stars}</div>
         <div class="card-status-icons">${statusIcons}</div>
         <div class="card-img-space">
-            <img src="${imgPath}" onerror="this.style.display='none'">
+            <img src="${imgPath}" onerror="this.style.visibility='hidden'">
         </div>
         <div class="card-name">${c.name}</div>
         <div class="card-atk">⚔️${atk}</div>
@@ -159,12 +170,12 @@ function createCardHtml(c, isEnemy = false) {
     `;
 }
 
-window.onload=()=>{ hideAllScreens(); start.classList.remove("hidden"); };
-function startGame(){ stage=1; coin=6; deck=[]; hideAllScreens(); shop.classList.remove("hidden"); refreshShop(); }
+window.onload=()=>{ hideAllScreens(); startDiv.classList.remove("hidden"); };
+function startGame(){ stage=1; coin=6; deck=[]; hideAllScreens(); shopDiv.classList.remove("hidden"); refreshShop(); }
 
 function backToTitle(){
     stage = 1; coin = 6; enemies = []; deck = []; shop = [];
-    hideAllScreens(); start.classList.remove("hidden");
+    hideAllScreens(); startDiv.classList.remove("hidden");
     logDiv.innerHTML=""; coinText.innerText = coin; stageText.innerText = "Stage "+stage;
     drawDeck(); shopCards.innerHTML="";
 }
@@ -253,7 +264,7 @@ function buy(i){
 
 function reroll(){ if(coin>0) { coin--; refreshShop(); } }
 
-function battle(){ if(deck.length>0) { hideAllScreens(); document.getElementById("battle").classList.remove("hidden"); startBattle(); } }
+function battle(){ if(deck.length>0) { hideAllScreens(); battleDiv.classList.remove("hidden"); startBattle(); } }
 
 function startBattle(){
     logDiv.innerHTML = "";
@@ -387,7 +398,7 @@ function finishBattle() {
         coin += 5; stage++;
         deck.forEach(c => { c.currentHp = c.hp + (c.rank - 1) * 800; c.status = []; });
         if (stage > 10) { hideAllScreens(); clearScreen.classList.remove("hidden"); }
-        else { hideAllScreens(); shop.classList.remove("hidden"); drawDeck(); refreshShop(); }
+        else { hideAllScreens(); shopDiv.classList.remove("hidden"); drawDeck(); refreshShop(); }
     } else { hideAllScreens(); gameOverScreen.classList.remove("hidden"); }
 }
 
