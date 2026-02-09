@@ -7,6 +7,10 @@ body { background: #000; color: white; text-align: center; font-family: 'Courier
     -webkit-touch-callout: none;
 }
 
+img {
+    -webkit-touch-callout: none;
+}
+
 /* カード基本設定 */
 .card {
     position: relative; width: 110px; height: 160px; background: #111; 
