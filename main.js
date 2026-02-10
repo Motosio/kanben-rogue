@@ -92,18 +92,22 @@ const enemyTypes = {
     }
 };
 
+// --- 変数定義 ---
 let stage=1, coin=6, deck=[], shop=[], enemies=[], nextEnemies=[], battleQueue=[];
+let isProcessing = false;
+
+// UI取得
 const ui_start=document.getElementById("start"), ui_shop=document.getElementById("shop"), ui_battle=document.getElementById("battle"), ui_clear=document.getElementById("clearScreen"), ui_over=document.getElementById("gameOverScreen"), shopCards=document.getElementById("shopCards"), deckDiv=document.getElementById("deck"), sellZone=document.getElementById("sellZone"), coinText=document.getElementById("coinText"), stageText=document.getElementById("stageText"), nextEnemyInfo=document.getElementById("nextEnemyInfo"), enemyArea=document.getElementById("enemyArea"), allyArea=document.getElementById("allyArea"), logDiv=document.getElementById("log");
 
+// --- 基本関数 ---
 function hideAllScreens() { [ui_start, ui_shop, ui_battle, ui_clear, ui_over].forEach(div => div && div.classList.add("hidden")); }
-window.onload=()=>{ hideAllScreens(); ui_start.classList.remove("hidden"); };
-function startGame(){ stage=1; coin=6; deck=[]; hideAllScreens(); ui_shop.classList.remove("hidden"); refreshShop(); }
 function log(t){ logDiv.innerHTML += `<div>${t}</div>`; logDiv.scrollTop = logDiv.scrollHeight; }
 function cost(r){return r==3?2:r==4?3:4;}
 function copyChar(c){return {...c,rank:1,currentHp:c.hp,status:[],skillCount:0};}
 function getIcon(t){ switch(t){ case "麻痺": return "⚡"; case "拘束": return "⛓️"; case "興奮": return "💥"; case "毒": return "🤢"; default: return ""; } }
 function getAffinity(a, t) { const tab = { "火": "草", "草": "水", "水": "火", "光": "闇", "闇": "光" }; if (tab[a] === t) return 1.5; if (tab[t] === a) return 0.5; return 1.0; }
 
+// --- 表示系 ---
 function createCardHtml(c, isEnemy = false) {
     const stars = "★".repeat(c.rarity || 3);
     const maxHp = isEnemy ? c.hp : (c.hp + (c.rank - 1) * 800);
@@ -148,56 +152,15 @@ function generateNextEnemies() {
     return result;
 }
 
-function drawShop(){ 
-    shopCards.innerHTML=""; 
-    shop.forEach((c,i)=>{ 
-        let d=document.createElement("div"); 
-        d.className=`card rarity-${c.rarity}`; 
-        d.draggable=true; 
-        d.innerHTML=createCardHtml(c); 
-        d.ondragstart=e=>e.dataTransfer.setData("shopIndex",i); 
-        shopCards.appendChild(d); 
-    }); 
-}
-function drawDeck(){ 
-    deckDiv.innerHTML=""; 
-    deck.forEach((c,i)=>{ 
-        let d=document.createElement("div"); 
-        d.className=`card rarity-${c.rarity}`; 
-        d.draggable=true; 
-        d.innerHTML=createCardHtml(c); 
-        d.ondragstart=e=>e.dataTransfer.setData("deckIndex",i); 
-        deckDiv.appendChild(d); 
-    }); 
-}
-function drawEnemy(){ 
-    enemyArea.innerHTML = ""; 
-    enemies.forEach(e => { 
-        if(e.currentHp > 0) { 
-            let d = document.createElement("div"); 
-            d.className = `card rarity-${e.rarity || 3}`; 
-            d.innerHTML = createCardHtml(e, true); 
-            enemyArea.appendChild(d); 
-        }
-    }); 
-}
-function drawAllies(){ 
-    allyArea.innerHTML=""; 
-    deck.forEach(c=>{ 
-        if(c.currentHp>0) { 
-            let d = document.createElement("div"); 
-            d.className = `card rarity-${c.rarity}`; 
-            d.innerHTML = createCardHtml(c); 
-            allyArea.appendChild(d); 
-        }
-    }); 
-}
+function drawShop(){ shopCards.innerHTML=""; shop.forEach((c,i)=>{ let d=document.createElement("div"); d.className=`card rarity-${c.rarity}`; d.draggable=true; d.innerHTML=createCardHtml(c); d.ondragstart=e=>e.dataTransfer.setData("shopIndex",i); shopCards.appendChild(d); }); }
+function drawDeck(){ deckDiv.innerHTML=""; deck.forEach((c,i)=>{ let d=document.createElement("div"); d.className=`card rarity-${c.rarity}`; d.draggable=true; d.innerHTML=createCardHtml(c); d.ondragstart=e=>e.dataTransfer.setData("deckIndex",i); deckDiv.appendChild(d); }); }
+function drawEnemy(){ enemyArea.innerHTML = ""; enemies.forEach(e => { if(e.currentHp > 0) { let d = document.createElement("div"); d.className = `card rarity-${e.rarity || 3}`; d.innerHTML = createCardHtml(e, true); enemyArea.appendChild(d); } }); }
+function drawAllies(){ allyArea.innerHTML=""; deck.forEach(c=>{ if(c.currentHp>0) { let d = document.createElement("div"); d.className = `card rarity-${c.rarity}`; d.innerHTML = createCardHtml(c); allyArea.appendChild(d); } }); }
 
-deckDiv.ondragover=e=>e.preventDefault();
-deckDiv.ondrop=e=>{ let i=e.dataTransfer.getData("shopIndex"); if(i!=="") buy(Number(i)); };
-sellZone.ondragover=e=>e.preventDefault();
-sellZone.ondrop=e=>{ let i=e.dataTransfer.getData("deckIndex"); if(i!=="") { let c=deck[i]; coin+=cost(c.rarity); deck.splice(i,1); coinText.innerText=coin; drawDeck(); } };
-
+// --- ゲーム進行 ---
+function startGame(){ stage=1; coin=6; deck=[]; hideAllScreens(); ui_shop.classList.remove("hidden"); refreshShop(); }
+function reroll(){ if(coin>0) { coin--; refreshShop(); } }
+function battle(){ if(deck.length>0) { hideAllScreens(); ui_battle.classList.remove("hidden"); startBattle(); } }
 function buy(i){
     let c = shop[i], p = cost(c.rarity), sameChar = deck.find(dc => dc.name === c.name);
     if(coin < p) return;
@@ -205,33 +168,15 @@ function buy(i){
     else { if(deck.length >= 5) return; coin -= p; deck.push(copyChar(c)); shop.splice(i,1); }
     coinText.innerText = coin; drawShop(); drawDeck();
 }
-function reroll(){ if(coin>0) { coin--; refreshShop(); } }
-function battle(){ if(deck.length>0) { hideAllScreens(); ui_battle.classList.remove("hidden"); startBattle(); } }
 
-// --- キャラクターデータ、enemyTypes, 変数定義などは変更なしのため省略 ---
-// (baseChars, enemyTypes, 各種UI要素の宣言はそのまま保持してください)
-
-let isProcessing = false;
-
+// --- バトルロジック ---
 function startBattle() {
     logDiv.innerHTML = "<b>--- 戦闘開始 ---</b><br>";
     battleQueue = [];
     isProcessing = false;
     enemies = JSON.parse(JSON.stringify(nextEnemies));
-    
-    deck.forEach(c => {
-        c.currentHp = c.hp + (c.rank - 1) * 800;
-        c.status = [];
-        c.skillCount = 0;
-    });
-
-    // 開幕スキル
-    deck.forEach(c => {
-        if (c.skill && c.skill.timing === "start") {
-            battleQueue.push({ type: "skill", actor: c, side: "ally" });
-        }
-    });
-
+    deck.forEach(c => { c.currentHp = c.hp + (c.rank - 1) * 800; c.status = []; c.skillCount = 0; });
+    deck.forEach(c => { if (c.skill && c.skill.timing === "start") battleQueue.push({ type: "skill", actor: c, side: "ally" }); });
     prepareTurn();
     drawEnemy();
     drawAllies();
@@ -242,31 +187,22 @@ function prepareTurn() {
     let aliveAllies = deck.filter(c => c.currentHp > 0);
     let aliveEnemies = enemies.filter(e => e.currentHp > 0);
     if (aliveEnemies.length === 0 || aliveAllies.length === 0) return;
-
     let turnActions = [];
     aliveAllies.forEach(c => turnActions.push({ type: "action", actor: c, side: "ally" }));
     aliveEnemies.forEach(e => turnActions.push({ type: "action", actor: e, side: "enemy" }));
-    
     turnActions.sort(() => Math.random() - 0.5);
     battleQueue.push(...turnActions);
 }
 
-// --- コアロジック: nextTurn ---
 function nextTurn() {
     if (isProcessing && battleQueue.length > 0) return;
-    
     if (battleQueue.length === 0) {
-        if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) {
-            finishBattle();
-        } else {
+        if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) finishBattle();
+        else {
             [...deck, ...enemies].forEach(u => {
                 if (u.currentHp > 0) {
                     let d = (u.status || []).find(s => s.type === "毒");
-                    if (d) {
-                        let dmg = d.level * 200;
-                        u.currentHp -= dmg;
-                        log(`<span style='color:#00ff00;'>${u.name}は毒で ${dmg} ダメージ！</span>`);
-                    }
+                    if (d) { u.currentHp -= (d.level * 200); log(`<span style='color:#00ff00;'>${u.name}は毒でダメージ！</span>`); }
                     applyStatus(u);
                 }
             });
@@ -277,46 +213,26 @@ function nextTurn() {
         }
         return;
     }
-
     isProcessing = true;
     let task = battleQueue.shift();
     let actor = task.actor;
+    if (actor.currentHp <= 0) { isProcessing = false; return nextTurn(); }
+    if (isStunned(actor)) { log(`${actor.name}は拘束されて動けない！`); finishAction(); return; }
 
-    if (actor.currentHp <= 0) {
-        isProcessing = false;
-        return nextTurn();
-    }
-
-    if (isStunned(actor)) {
-        log(`${actor.name}は拘束されて動けない！`);
-        finishAction();
-        return;
-    }
-
-    // 行動分岐
     if (task.type === "skill") {
-        // 開幕スキル処理
         executeSkillEffect(actor, task.side);
     } else {
-        // 通常アクション (攻撃 ＋ スキル判定)
         executeAttackEffect(actor, task.side);
-
         if (actor.skill && actor.skill.interval) {
             actor.skillCount++;
             if (actor.skillCount >= actor.skill.interval) {
-                // 攻撃の0.3秒後にスキル発動
-                setTimeout(() => {
-                    executeSkillEffect(actor, task.side);
-                    actor.skillCount = 0; 
-                }, 300);
-                return; // executeSkillEffect 内の finishAction で次へ
+                setTimeout(() => { executeSkillEffect(actor, task.side); actor.skillCount = 0; }, 300);
+                return;
             }
         }
         finishAction();
     }
 }
-
-// --- 独立させた実行関数 ---
 
 function executeAttackEffect(a, side) {
     let targets = (side === "ally") ? enemies.filter(e => e.currentHp > 0) : deck.filter(c => c.currentHp > 0);
@@ -329,38 +245,25 @@ function executeAttackEffect(a, side) {
 
 function executeSkillEffect(a, side) {
     log(`<b style="color:#ffeb3b;">★ ${a.name}のスキル発動！</b>`);
-    // ターゲットの定義を明確化
-    // ts: スキルを当てる相手, ds: スキルを使う側の味方
     const ts = (side === "ally") ? enemies : deck;
     const ds = (side === "ally") ? deck : enemies;
-    
-    if (a.skill && typeof a.skill.action === "function") {
-        a.skill.action(a, ts, ds);
-    }
-    
-    drawEnemy();
-    drawAllies();
+    if (a.skill && typeof a.skill.action === "function") a.skill.action(a, ts, ds);
     finishAction();
 }
 
 function finishAction() {
-    drawEnemy();
-    drawAllies();
-    setTimeout(() => {
-        isProcessing = false;
-        nextTurn();
-    }, 500); 
+    drawEnemy(); drawAllies();
+    setTimeout(() => { isProcessing = false; nextTurn(); }, 500);
 }
 
 function dealDamage(a, t, d) {
     const af = getAffinity(a.elem, t.elem);
     const fd = Math.floor(d * af);
     t.currentHp = Math.max(0, t.currentHp - fd);
-    let color = af > 1 ? "#ff4444" : af < 1 ? "#aaa" : "#fff";
-    log(`<span style="color:${color}">${t.name}に ${fd} ダメージ！</span>`);
+    log(`<span style="color:${af>1?'#ff4444':af<1?'#aaa':'#fff'}">${t.name}に ${fd} ダメージ！</span>`);
 }
 
-// --- 補助系（変更なし） ---
+// --- 補助関数 ---
 function addStatus(u, type, level, turn) {
     if (!u.status) u.status = [];
     let s = u.status.find(s => s.type === type);
@@ -377,43 +280,16 @@ function finishBattle() {
 function calcAtk(u){
     let b = u.atk + (u.rank ? (u.rank - 1) * 80 : 0);
     let m = 1.0;
-    if(u.status) u.status.forEach(s=>{
-        if(s.type === "麻痺") m -= 0.3;
-        if(s.type === "興奮") m += (0.3 * s.level);
-    });
-    return Math.floor(b * Math.max(0.1, m));
-}
-function isStunned(c){ return c.status && c.status.some(s=>s.type==="拘束"); }
-function applyStatus(u){ if(u.status) u.status.forEach(s=>s.turn--); u.status = u.status.filter(s => s.turn > 0); }
-
-ui_battle.addEventListener("click", () => {
-    if (!isProcessing && battleQueue.length > 0) nextTurn();
-});
-
-
-function addStatus(u, type, level, turn) {
-    if (!u.status) u.status = [];
-    let s = u.status.find(s => s.type === type);
-    if(s) { s.turn = Math.max(s.turn, turn); s.level = Math.max(s.level, level); }
-    else { u.status.push({ type, level, turn }); }
-}
-function finishBattle() {
-    if (enemies.every(e => e.currentHp <= 0)) { coin += 10; stage++; if (stage > 10) { hideAllScreens(); ui_clear.classList.remove("hidden"); } else { hideAllScreens(); ui_shop.classList.remove("hidden"); refreshShop(); }} 
-    else { hideAllScreens(); ui_over.classList.remove("hidden"); }
-}
-function calcAtk(u){
-    let b = u.atk + (u.rank ? (u.rank - 1) * 80 : 0); let m = 1.0;
     if(u.status) u.status.forEach(s=>{ if(s.type === "麻痺") m -= 0.3; if(s.type === "興奮") m += (0.3 * s.level); });
     return Math.floor(b * Math.max(0.1, m));
 }
 function isStunned(c){ return c.status && c.status.some(s=>s.type==="拘束"); }
 function applyStatus(u){ if(u.status) u.status.forEach(s=>s.turn--); u.status = u.status.filter(s => s.turn > 0); }
 
-document.addEventListener("DOMContentLoaded", () => {
-    const startButton = document.getElementById("startButton");
-    if (!startButton) return;
-
-    startButton.addEventListener("click", () => {
-        startGame();
-    });
-});
+// --- イベント登録 ---
+window.onload=()=>{ hideAllScreens(); ui_start.classList.remove("hidden"); };
+deckDiv.ondragover=e=>e.preventDefault();
+deckDiv.ondrop=e=>{ let i=e.dataTransfer.setData("shopIndex", ""); i=e.dataTransfer.getData("shopIndex"); if(i!=="") buy(Number(i)); };
+sellZone.ondragover=e=>e.preventDefault();
+sellZone.ondrop=e=>{ let i=e.dataTransfer.getData("deckIndex"); if(i!=="") { let c=deck[i]; coin+=cost(c.rarity); deck.splice(i,1); coinText.innerText=coin; drawDeck(); } };
+ui_battle.addEventListener("click", () => { if (!isProcessing && battleQueue.length > 0) nextTurn(); });
