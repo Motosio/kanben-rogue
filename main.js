@@ -303,55 +303,59 @@ function nextTurn() {
         return;
     }
 
-    if (task.type === "skill") {
-        // 開幕スキルの処理
-        executeSkill(actor, task.side);
-    } else {
-        // 通常行動（スキル判定 ＋ 通常攻撃）
+// --- 中略 (死亡・拘束チェック後) ---
+
+    // 通常アクション：必ず「攻撃」を行い、ゲージが溜まっていれば「スキル」も追加発動する
+    if (task.type === "action") {
+        // 1. まずは通常攻撃を必ず実行
+        executeAttack(actor, task.side);
+
+        // 2. その後、スキルゲージを溜めて判定
         if (actor.skill && actor.skill.interval) {
             actor.skillCount++;
             if (actor.skillCount >= actor.skill.interval) {
-                executeSkill(actor, task.side);
-                actor.skillCount = 0; // ここで確実にリセット
-            } else {
-                executeAttack(actor, task.side);
+                // 攻撃のすぐ後にスキルを連続発動！
+                setTimeout(() => {
+                    executeSkill(actor, task.side);
+                    actor.skillCount = 0; // スキル発動後にリセット
+                }, 300); // 攻撃演出の余韻として0.3秒だけズラす
+                return; // スキル側の finishAction で次へ行くのでここで一旦抜ける
             }
-        } else {
-            executeAttack(actor, task.side);
         }
+    } else if (task.type === "skill") {
+        // 開幕(timing: "start")スキルの場合
+        executeSkill(actor, task.side);
+        return;
     }
 
-    function executeSkill(a, side) {
-        log(`<b>${a.name}のスキル発動！</b>`);
-        const targets = (side === "ally") ? enemies : deck;
-        const allies = (side === "ally") ? deck : enemies;
-        a.skill.action(a, targets, allies);
-        drawEnemy();
-        drawAllies();
-        finishAction();
-    }
+    finishAction(); // スキルが出なかった場合はそのまま次のキャラへ
 
-    function executeAttack(a, side) {
-        let targets = (side === "ally") ? enemies.filter(e => e.currentHp > 0) : deck.filter(c => c.currentHp > 0);
-        if (targets.length > 0) {
-            let t = targets[Math.floor(Math.random() * targets.length)];
-            log(`${a.name}の攻撃！`);
-            dealDamage(a, t, calcAtk(a));
-        }
-        finishAction();
-    }
-
-    function finishAction() {
-        drawEnemy();
-        drawAllies();
-        // 少し待ってから次のキャラの行動へ（自動進行）
-        setTimeout(() => {
-            isProcessing = false;
-            nextTurn();
-        }, 600); 
+// --- 内部処理用関数 ---
+function executeAttack(a, side) {
+    let targets = (side === "ally") ? enemies.filter(e => e.currentHp > 0) : deck.filter(c => c.currentHp > 0);
+    if (targets.length > 0) {
+        let t = targets[Math.floor(Math.random() * targets.length)];
+        log(`<span>${a.name}の攻撃！</span>`);
+        dealDamage(a, t, calcAtk(a));
     }
 }
 
+function executeSkill(a, side) {
+    log(`<b style="color:#ffeb3b;">★ ${a.name}のスキル発動！</b>`);
+    const targets = (side === "ally") ? enemies : deck;
+    const allies = (side === "ally") ? deck : enemies;
+        
+    // スキル効果の実行
+    if (a.skill && typeof a.skill.action === "function") {
+        a.skill.action(a, targets, allies);
+    }
+        
+    drawEnemy();
+    drawAllies();
+    finishAction(); // スキル完了後に次のキャラへ
+}
+    
+    
 // --- 補助関数 ---
 
 function dealDamage(a, t, d) {
