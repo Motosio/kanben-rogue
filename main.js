@@ -73,13 +73,21 @@ const baseChars = [
 ];
 
 const enemyTypes = {
-    slime: { name: "スライム", hp: 3500, atk: 700, elem: "水", rarity: 3, skill: { interval: 2, action: (e, ts, ds) => { e.currentHp = Math.min(e.hp, e.currentHp + 1000); log(`${e.name}は回復した！`); }}},
-    golem: { name: "ゴーレム", hp: 6500, atk: 450, elem: "草", rarity: 3, skill: { interval: 3, action: (e, ts, ds) => { addStatus(e, "興奮", 1, 3); log(`${e.name}は興奮した！`); }}},
+    slime: { name: "スライム", hp: 3500, atk: 700, elem: "水", rarity: 3, 
+        skill: { interval: 2, action: (e, ts, ds) => { 
+            e.currentHp = Math.min(e.hp, e.currentHp + 1000); 
+            log(`<span style='color:#00ffff;'>${e.name}は「再生」を使った！ HPが1000回復！</span>`); 
+        }}},
+    golem: { name: "ゴーレム", hp: 6500, atk: 450, elem: "草", rarity: 3, 
+        skill: { interval: 3, action: (e, ts, ds) => { 
+            addStatus(e, "興奮", 1, 3); 
+            log(`<span style='color:#ffaa00;'>${e.name}は「大咆哮」！ 自身に興奮を付与した！</span>`); 
+        }}},
     kurorekishi: { 
         name: "黒歴史", hp: 20000, atk: 1000, elem: "闇", rarity: 5,
         skill: { interval: 2, action: (e, ts, ds) => {
             ts.forEach(t => { addStatus(t, "麻痺", 3, 2); addStatus(t, "毒", 3, 3); });
-            log("<b style='color:#ff00ff;'>黒歴史のフラッシュバック！ 全員が毒と麻痺に侵された！</b>");
+            log("<b style='color:#ff00ff;'>【黒歴史のフラッシュバック】全員が毒と麻痺に侵された！</b>");
         }}
     },
     nouki: { 
@@ -87,7 +95,7 @@ const enemyTypes = {
         skill: { interval: 2, action: (e, ts, ds) => {
             addStatus(e, "興奮", 10, 3);
             ts.forEach(t => { addStatus(t, "拘束", 1, 1); t.currentHp = Math.floor(t.currentHp * 0.5); });
-            log("<b style='color:#ff0000;'>【警告】納期当日です。全員拘束＆HP半減！</b>");
+            log("<b style='color:#ff0000;'>【強制残業】納期が迫る！ 全員拘束＆HP半減！</b>");
         }}
     }
 };
@@ -244,11 +252,31 @@ function executeAttackEffect(a, side) {
 }
 
 function executeSkillEffect(a, side) {
-    log(`<b style="color:#ffeb3b;">★ ${a.name}のスキル発動！</b>`);
+    // 陣営の確定
     const ts = (side === "ally") ? enemies : deck;
     const ds = (side === "ally") ? deck : enemies;
-    if (a.skill && typeof a.skill.action === "function") a.skill.action(a, ts, ds);
-    finishAction();
+
+    // ログの起点（★マークで強調）
+    log(`<b style="color:#ffeb3b;">★ ${a.name}のスキル発動！</b>`);
+    
+    if (a.skill && typeof a.skill.action === "function") {
+        a.skill.action(a, ts, ds);
+    }
+    
+    // 画面更新
+    drawEnemy();
+    drawAllies();
+    
+    // 演出時間
+    setTimeout(() => {
+        isProcessing = false;
+        // スキル直後に決着がついたかチェック
+        if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) {
+            finishBattle();
+        } else {
+            nextTurn();
+        }
+    }, 600);
 }
 
 function finishAction() {
