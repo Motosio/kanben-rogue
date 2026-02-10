@@ -321,8 +321,3 @@ deckDiv.ondrop=e=>{ let i=e.dataTransfer.setData("shopIndex", ""); i=e.dataTrans
 sellZone.ondragover=e=>e.preventDefault();
 sellZone.ondrop=e=>{ let i=e.dataTransfer.getData("deckIndex"); if(i!=="") { let c=deck[i]; coin+=cost(c.rarity); deck.splice(i,1); coinText.innerText=coin; drawDeck(); } };
 ui_battle.addEventListener("click", () => { if (!isProcessing && battleQueue.length > 0) nextTurn(); });
-
-document.addEventListener("DOMContentLoaded", () => {
-    const startButton = document.getElementById("startButton");
-    startButton.addEventListener("click", startGame);
-});
