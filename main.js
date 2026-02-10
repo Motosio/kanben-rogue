@@ -204,13 +204,20 @@ function prepareTurn() {
 
 function nextTurn() {
     if (isProcessing && battleQueue.length > 0) return;
+    
     if (battleQueue.length === 0) {
-        if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) finishBattle();
-        else {
+        // ターン終了処理 (毒など)
+        if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) {
+            finishBattle();
+        } else {
             [...deck, ...enemies].forEach(u => {
                 if (u.currentHp > 0) {
                     let d = (u.status || []).find(s => s.type === "毒");
-                    if (d) { u.currentHp -= (d.level * 200); log(`<span style='color:#00ff00;'>${u.name}は毒でダメージ！</span>`); }
+                    if (d) {
+                        let dmg = d.level * 200;
+                        u.currentHp -= dmg;
+                        log(`<span style='color:#00ff00;'>${u.name}は毒で ${dmg} ダメージ！</span>`);
+                    }
                     applyStatus(u);
                 }
             });
@@ -221,27 +228,48 @@ function nextTurn() {
         }
         return;
     }
+
     isProcessing = true;
     let task = battleQueue.shift();
     let actor = task.actor;
-    if (actor.currentHp <= 0) { isProcessing = false; return nextTurn(); }
-    if (isStunned(actor)) { log(`${actor.name}は拘束されて動けない！`); finishAction(); return; }
+
+    if (actor.currentHp <= 0) {
+        isProcessing = false;
+        return nextTurn();
+    }
+
+    if (isStunned(actor)) {
+        log(`${actor.name}は拘束されて動けない！`);
+        // 拘束されていてもスキルカウントだけは進める（あるいは進めない、お好みで）
+        setTimeout(() => { isProcessing = false; nextTurn(); }, 500);
+        return;
+    }
 
     if (task.type === "skill") {
         executeSkillEffect(actor, task.side);
     } else {
+        // 通常攻撃
         executeAttackEffect(actor, task.side);
+
+        // スキル判定
         if (actor.skill && actor.skill.interval) {
             actor.skillCount++;
             if (actor.skillCount >= actor.skill.interval) {
-                setTimeout(() => { executeSkillEffect(actor, task.side); actor.skillCount = 0; }, 300);
-                return;
+                // 攻撃が終わった 0.4秒後にスキルへ
+                setTimeout(() => {
+                    executeSkillEffect(actor, task.side);
+                    actor.skillCount = 0; 
+                }, 400);
+            } else {
+                // スキルが出ないなら 0.5秒後に次のキャラへ
+                setTimeout(() => { isProcessing = false; nextTurn(); }, 500);
             }
+        } else {
+            // スキルを持っていないなら 0.5秒後に次のキャラへ
+            setTimeout(() => { isProcessing = false; nextTurn(); }, 500);
         }
-        finishAction();
     }
 }
-
 function executeAttackEffect(a, side) {
     let targets = (side === "ally") ? enemies.filter(e => e.currentHp > 0) : deck.filter(c => c.currentHp > 0);
     if (targets.length > 0) {
@@ -252,31 +280,33 @@ function executeAttackEffect(a, side) {
 }
 
 function executeSkillEffect(a, side) {
-    // 陣営の確定
-    const ts = (side === "ally") ? enemies : deck;
-    const ds = (side === "ally") ? deck : enemies;
+    // ターゲットの決定
+    const ts = (side === "ally") ? enemies : deck; // 相手チーム
+    const ds = (side === "ally") ? deck : enemies; // 自分チーム
 
-    // ログの起点（★マークで強調）
+    // 1. まず「発動した！」のログを出す
     log(`<b style="color:#ffeb3b;">★ ${a.name}のスキル発動！</b>`);
     
+    // 2. スキルの中身（action）を実行
+    // ここで enemyTypes に書いた「log(...)」や「currentHp += ...」が動きます
     if (a.skill && typeof a.skill.action === "function") {
         a.skill.action(a, ts, ds);
     }
     
-    // 画面更新
+    // 3. 実行後の数値を画面に反映
     drawEnemy();
     drawAllies();
     
-    // 演出時間
+    // 4. 少し待ってから次のターンへ（演出のタメ）
     setTimeout(() => {
         isProcessing = false;
-        // スキル直後に決着がついたかチェック
+        // スキルでトドメを刺した場合のチェック
         if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) {
             finishBattle();
         } else {
-            nextTurn();
+            nextTurn(); 
         }
-    }, 600);
+    }, 800); 
 }
 
 function finishAction() {
