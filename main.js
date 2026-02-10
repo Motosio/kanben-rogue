@@ -73,18 +73,25 @@ const baseChars = [
 ];
 
 const enemyTypes = {
-    slime: { name: "スライム", hp: 3500, atk: 700, elem: "水", skill: { interval: 2, action: (e) => { e.currentHp += 1000; log("回復した"); }}},
-    golem: { name: "ゴーレム", hp: 6500, atk: 450, elem: "草", skill: { interval: 3, action: (e) => addStatus(e, "興奮", 1, 3) }},
+    slime: { 
+        name: "スライム", hp: 3500, atk: 700, elem: "水", 
+        skill: { interval: 2, action: (e, ts, ds) => { e.currentHp += 1000; log(`${e.name}は自己再生した！`); }}
+    },
+    golem: { 
+        name: "ゴーレム", hp: 6500, atk: 450, elem: "草", 
+        skill: { interval: 3, action: (e, ts, ds) => { addStatus(e, "興奮", 1, 3); log(`${e.name}は力を溜めている！`); }}
+    },
+    // 黒歴史と納期はそのままでも動きますが、(e, ts, ds) に統一するとより安全です
     kurorekishi: { 
         name: "黒歴史", hp: 20000, atk: 1000, elem: "闇", rarity: 5,
-        skill: { name: "トラウマ", interval: 2, action: (e, ts) => {
+        skill: { name: "トラウマ", interval: 2, action: (e, ts, ds) => {
             ts.forEach(t => { addStatus(t, "麻痺", 3, 2); addStatus(t, "毒", 3, 3); });
             log("<b style='color:#ff00ff;'>黒歴史のフラッシュバック！ 全員が毒と麻痺に侵された！</b>");
         }}
     },
     nouki: { 
         name: "納期", hp: 60000, atk: 2500, elem: "闇", rarity: 5,
-        skill: { name: "最終デッドライン", interval: 2, action: (e, ts) => {
+        skill: { name: "最終デッドライン", interval: 2, action: (e, ts, ds) => {
             addStatus(e, "興奮", 10, 3);
             ts.forEach(t => {
                 addStatus(t, "拘束", 1, 1);
@@ -229,8 +236,9 @@ function prepareTurn() {
 
 function nextTurn() {
     if (battleQueue.length === 0) {
-        if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) { finishBattle(); } 
-        else { 
+        if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) { 
+            finishBattle(); 
+        } else { 
             [...deck, ...enemies].forEach(u => {
                 if(u.currentHp > 0) {
                     let d = u.status.find(s=>s.type==="毒");
@@ -242,41 +250,50 @@ function nextTurn() {
         }
         return;
     }
-    let task = battleQueue.shift(); let actor = task.actor;
+
+    let task = battleQueue.shift(); 
+    let actor = task.actor;
     if (actor.currentHp <= 0) return nextTurn();
+
+    // --- スキル処理 ---
     if (task.type === "skill") {
         log(`<b>${actor.name}がスキルを発動！</b>`);
         actor.skill.action(actor, enemies, deck);
         drawEnemy(); drawAllies();
     } else {
-        if (isStunned(actor)) { log(`${actor.name}は拘束中！`); drawEnemy(); drawAllies(); return; }
-        if (actor.skill && actor.skill.interval) {
-
-    // 先に判定
-    if (actor.skillCount >= actor.skill.interval) {
-
-        log(`<b>${actor.name}のスキル！</b>`);
-
-        if (task.side === "ally") {
-            actor.skill.action(actor, enemies, deck);
-        } else {
-            // 敵スキルは定義通り
-            actor.skill.action(actor, deck);
+        if (isStunned(actor)) { 
+            log(`${actor.name}は拘束中！`); 
+            drawEnemy(); drawAllies(); 
+            return; 
         }
 
-        actor.skillCount = 0;
-        drawEnemy();
-        drawAllies();
-    }
+        // 攻撃前のスキル判定
+        if (actor.skill && actor.skill.interval) {
+            actor.skillCount++;
+            if (actor.skillCount >= actor.skill.interval) {
+                log(`<b>${actor.name}のスキル！</b>`);
+                
+                // 【修正ポイント】ターゲットを明確に分ける
+                const targets = (task.side === "ally") ? enemies : deck;
+                const allies = (task.side === "ally") ? deck : enemies;
+                
+                // スキル実行（常に3つの引数を渡すように統一）
+                actor.skill.action(actor, targets, allies);
+                
+                actor.skillCount = 0;
+                drawEnemy(); drawAllies();
+            }
+        }
 
-    // 行動後に加算
-    actor.skillCount++;
-}
+        // 通常攻撃
         let ts = (task.side === "ally") ? enemies.filter(e => e.currentHp > 0) : deck.filter(c => c.currentHp > 0);
         if (ts.length > 0) {
             let t = ts[Math.floor(Math.random() * ts.length)];
-            log(`${actor.name}の攻撃！`); dealDamage(actor, t, calcAtk(actor));
-        } else { nextTurn(); }
+            log(`${actor.name}の攻撃！`); 
+            dealDamage(actor, t, calcAtk(actor));
+        } else { 
+            nextTurn(); 
+        }
     }
 }
 
