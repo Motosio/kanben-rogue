@@ -251,15 +251,27 @@ function nextTurn() {
     } else {
         if (isStunned(actor)) { log(`${actor.name}は拘束中！`); drawEnemy(); drawAllies(); return; }
         if (actor.skill && actor.skill.interval) {
-            actor.skillCount++;
-            if (actor.skillCount >= actor.skill.interval) {
-                log(`<b>${actor.name}のスキル！</b>`);
-                const ts = (task.side === "ally") ? enemies : deck;
-                const ds = (task.side === "ally") ? deck : enemies;
-                actor.skill.action(actor, ts, ds);
-                actor.skillCount = 0; drawEnemy(); drawAllies();
-            }
+
+    // 先に判定
+    if (actor.skillCount >= actor.skill.interval) {
+
+        log(`<b>${actor.name}のスキル！</b>`);
+
+        if (task.side === "ally") {
+            actor.skill.action(actor, enemies, deck);
+        } else {
+            // 敵スキルは定義通り
+            actor.skill.action(actor, deck);
         }
+
+        actor.skillCount = 0;
+        drawEnemy();
+        drawAllies();
+    }
+
+    // 行動後に加算
+    actor.skillCount++;
+}
         let ts = (task.side === "ally") ? enemies.filter(e => e.currentHp > 0) : deck.filter(c => c.currentHp > 0);
         if (ts.length > 0) {
             let t = ts[Math.floor(Math.random() * ts.length)];
