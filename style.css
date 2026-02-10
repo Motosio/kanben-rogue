@@ -1,3 +1,6 @@
+.hidden {
+    display: none;
+}
 
 
 /* 全体を選択不可にする */
