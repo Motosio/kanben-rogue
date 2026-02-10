@@ -208,80 +208,151 @@ function buy(i){
 function reroll(){ if(coin>0) { coin--; refreshShop(); } }
 function battle(){ if(deck.length>0) { hideAllScreens(); ui_battle.classList.remove("hidden"); startBattle(); } }
 
-function startBattle(){
+// --- 共通データなどは以前のものを引き継いでください ---
+// (baseChars, enemyTypes などの定義はそのまま)
+
+// --- 修正されたバトルロジック ---
+
+let isProcessing = false; // 二重クリック防止
+
+function startBattle() {
     logDiv.innerHTML = "<b>--- 戦闘開始 ---</b><br>";
     battleQueue = [];
+    isProcessing = false;
     enemies = JSON.parse(JSON.stringify(nextEnemies));
-    deck.forEach(c => { c.currentHp = c.hp + (c.rank - 1) * 800; c.status = []; c.skillCount = 0; });
-    deck.forEach(c => { if(c.skill && c.skill.timing === "start") battleQueue.push({ type: "skill", actor: c, side: "ally" }); });
-    prepareTurn(); drawEnemy(); drawAllies();
+    
+    // 味方の状態リセット
+    deck.forEach(c => {
+        c.currentHp = c.hp + (c.rank - 1) * 800;
+        c.status = [];
+        c.skillCount = 0;
+    });
+
+    // 開幕スキルをキューに追加
+    deck.forEach(c => {
+        if (c.skill && c.skill.timing === "start") {
+            battleQueue.push({ type: "skill", actor: c, side: "ally" });
+        }
+    });
+    
+    prepareTurn();
+    drawEnemy();
+    drawAllies();
+    
+    // 開幕スキルがある場合は自動で1回目を動かす
+    if(battleQueue.length > 0) nextTurn();
 }
 
 function prepareTurn() {
     let aliveAllies = deck.filter(c => c.currentHp > 0);
     let aliveEnemies = enemies.filter(e => e.currentHp > 0);
     if (aliveEnemies.length === 0 || aliveAllies.length === 0) return;
-    aliveAllies.forEach(c => battleQueue.push({ type: "action", actor: c, side: "ally" }));
-    aliveEnemies.forEach(e => battleQueue.push({ type: "action", actor: e, side: "enemy" }));
+
+    // 行動順をシャッフル（味方→敵の固定だと単調なため）
+    let turnActions = [];
+    aliveAllies.forEach(c => turnActions.push({ type: "action", actor: c, side: "ally" }));
+    aliveEnemies.forEach(e => turnActions.push({ type: "action", actor: e, side: "enemy" }));
+    
+    // 簡易シャッフル
+    turnActions.sort(() => Math.random() - 0.5);
+    battleQueue.push(...turnActions);
 }
 
-// --- ★ここが修正された核心部分★ ---
 function nextTurn() {
+    if (isProcessing && battleQueue.length > 0) return; // 重複実行防止
+    
     if (battleQueue.length === 0) {
-        if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) { 
-            finishBattle(); 
-        } else { 
+        // 全員の行動が終了した時の処理
+        if (enemies.every(e => e.currentHp <= 0) || deck.every(c => c.currentHp <= 0)) {
+            finishBattle();
+        } else {
+            // ターン終了時の状態異常ダメージ処理
             [...deck, ...enemies].forEach(u => {
-                if(u.currentHp > 0) {
-                    let d = u.status.find(s=>s.type==="毒");
-                    if(d) { let dmg = d.level * 200; u.currentHp -= dmg; log(`${u.name}は毒で ${dmg} ダメージ！`); }
-                    applyStatus(u); 
+                if (u.currentHp > 0) {
+                    let d = u.status.find(s => s.type === "毒");
+                    if (d) {
+                        let dmg = d.level * 200;
+                        u.currentHp -= dmg;
+                        log(`<span style='color:#00ff00;'>${u.name}は毒で ${dmg} ダメージ！</span>`);
+                    }
+                    applyStatus(u);
                 }
             });
-            prepareTurn(); log("<hr>");
-            drawEnemy(); drawAllies();
+            log("<hr style='border:0.5px solid #444;'>");
+            prepareTurn();
+            drawEnemy();
+            drawAllies();
         }
         return;
     }
 
-    let task = battleQueue.shift(); 
+    isProcessing = true;
+    let task = battleQueue.shift();
     let actor = task.actor;
-    if (actor.currentHp <= 0) return nextTurn();
 
-    if (task.type === "skill") {
-        log(`<b>${actor.name}がスキルを発動！</b>`);
-        actor.skill.action(actor, enemies, deck);
-        drawEnemy(); drawAllies();
-        return; // スキル後一旦停止
-    } 
-
-    // 通常アクション(攻撃+スキル判定)
-    if (isStunned(actor)) { 
-        log(`${actor.name}は拘束中！`); 
-        return; 
+    // 死亡チェック
+    if (actor.currentHp <= 0) {
+        isProcessing = false;
+        return nextTurn();
     }
 
-    // スキルカウント加算と判定
-    if (actor.skill && actor.skill.interval) {
-        actor.skillCount++;
-        if (actor.skillCount >= actor.skill.interval) {
-            log(`<b>${actor.name}のスキル発動！</b>`);
-            const targets = (task.side === "ally") ? enemies : deck;
-            const allies = (task.side === "ally") ? deck : enemies;
-            actor.skill.action(actor, targets, allies);
-            actor.skillCount = 0;
-            drawEnemy(); drawAllies();
+    // 拘束チェック
+    if (isStunned(actor)) {
+        log(`${actor.name}は拘束されて動けない！`);
+        finishAction();
+        return;
+    }
+
+    if (task.type === "skill") {
+        // 開幕スキルの処理
+        executeSkill(actor, task.side);
+    } else {
+        // 通常行動（スキル判定 ＋ 通常攻撃）
+        if (actor.skill && actor.skill.interval) {
+            actor.skillCount++;
+            if (actor.skillCount >= actor.skill.interval) {
+                executeSkill(actor, task.side);
+                actor.skillCount = 0; // ここで確実にリセット
+            } else {
+                executeAttack(actor, task.side);
+            }
+        } else {
+            executeAttack(actor, task.side);
         }
     }
 
-    // 通常攻撃
-    let targets = (task.side === "ally") ? enemies.filter(e => e.currentHp > 0) : deck.filter(c => c.currentHp > 0);
-    if (targets.length > 0) {
-        let t = targets[Math.floor(Math.random() * targets.length)];
-        log(`${actor.name}の攻撃！`); 
-        dealDamage(actor, t, calcAtk(actor));
+    function executeSkill(a, side) {
+        log(`<b>${a.name}のスキル発動！</b>`);
+        const targets = (side === "ally") ? enemies : deck;
+        const allies = (side === "ally") ? deck : enemies;
+        a.skill.action(a, targets, allies);
+        drawEnemy();
+        drawAllies();
+        finishAction();
+    }
+
+    function executeAttack(a, side) {
+        let targets = (side === "ally") ? enemies.filter(e => e.currentHp > 0) : deck.filter(c => c.currentHp > 0);
+        if (targets.length > 0) {
+            let t = targets[Math.floor(Math.random() * targets.length)];
+            log(`${a.name}の攻撃！`);
+            dealDamage(a, t, calcAtk(a));
+        }
+        finishAction();
+    }
+
+    function finishAction() {
+        drawEnemy();
+        drawAllies();
+        // 少し待ってから次のキャラの行動へ（自動進行）
+        setTimeout(() => {
+            isProcessing = false;
+            nextTurn();
+        }, 600); 
     }
 }
+
+// --- 補助関数 ---
 
 function dealDamage(a, t, d) {
     const af = getAffinity(a.elem, t.elem);
@@ -289,8 +360,14 @@ function dealDamage(a, t, d) {
     t.currentHp = Math.max(0, t.currentHp - fd);
     let color = af > 1 ? "#ff4444" : af < 1 ? "#aaa" : "#fff";
     log(`<span style="color:${color}">${t.name}に ${fd} ダメージ！</span>`);
-    drawEnemy(); drawAllies();
 }
+
+// 他の関数 (addStatus, calcAtk, isStunned, applyStatus, finishBattle) は前回と同じでOKです
+
+// バトル画面でのクリックでも進められるようにイベント追加
+ui_battle.addEventListener("click", () => {
+    if (!isProcessing && battleQueue.length > 0) nextTurn();
+});
 
 function addStatus(u, type, level, turn) {
     if (!u.status) u.status = [];
