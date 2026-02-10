@@ -86,7 +86,7 @@ const enemyTypes = {
     kurorekishi: { 
         name: "黒歴史", hp: 20000, atk: 1000, elem: "闇", rarity: 5,
         skill: { interval: 2, action: (e, ts, ds) => {
-            ts.forEach(t => { addStatus(t, "麻痺", 3, 2); addStatus(t, "毒", 3, 3); });
+            ts.forEach(t => { if(t.currentHp > 0) { addStatus(t, "麻痺", 3, 2); addStatus(t, "毒", 3, 3); } });
             log("<b style='color:#ff00ff;'>【黒歴史のフラッシュバック】全員が毒と麻痺に侵された！</b>");
         }}
     },
@@ -94,7 +94,7 @@ const enemyTypes = {
         name: "納期", hp: 60000, atk: 2500, elem: "闇", rarity: 5,
         skill: { interval: 2, action: (e, ts, ds) => {
             addStatus(e, "興奮", 10, 3);
-            ts.forEach(t => { addStatus(t, "拘束", 1, 1); t.currentHp = Math.floor(t.currentHp * 0.5); });
+            ts.forEach(t => { if(t.currentHp > 0) { addStatus(t, "拘束", 1, 1); t.currentHp = Math.floor(t.currentHp * 0.5); } });
             log("<b style='color:#ff0000;'>【強制残業】納期が迫る！ 全員拘束＆HP半減！</b>");
         }}
     }
