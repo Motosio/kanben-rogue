@@ -339,3 +339,12 @@ function calcAtk(u){
 function isStunned(c){ return c.status && c.status.some(s=>s.type==="拘束"); }
 function applyStatus(u){ if(u.status) u.status.forEach(s=>s.turn--); u.status = u.status.filter(s => s.turn > 0); }
 function backToTitle(){ stage = 1; coin = 6; hideAllScreens(); ui_start.classList.remove("hidden"); }
+
+document.addEventListener("DOMContentLoaded", () => {
+    const startButton = document.getElementById("startButton");
+    if (!startButton) return;
+
+    startButton.addEventListener("click", () => {
+        startGame();
+    });
+});
