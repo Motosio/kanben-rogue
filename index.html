@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <title>Card Rogue - Extreme Edition</title>
     <link rel="stylesheet" href="style.css">
-
 </head>
 <body>
-    
-<div id="fade"></div>
+
 <h2 id="stageText">Stage 1</h2>
 
 <div id="start">
@@ -21,23 +19,19 @@
 <div id="shop" class="hidden">
     <div class="info-bar">
         <div>Coin: <span id="coinText"></span></div>
-        <div id="nextEnemyInfo">Next: ???</div>
+        <div id="nextEnemyInfo"></div>
     </div>
-    
+
     <div id="shopCards"></div>
     <button onclick="reroll()">更新(1コイン)</button>
 
-    <div class="deck-container">
-        <h3>デッキ (最大5枚)</h3>
-        <div id="deck"></div>
-    </div>
+    <h3>デッキ</h3>
+    <div id="deck"></div>
 
-    <div class="sell-container">
-        <h3 style="color: #ff4444;">売却ゾーン (ここにドラッグ)</h3>
-        <div id="sellZone"></div>
-    </div>
-    
-    <button onclick="battle()" class="btn-battle">戦闘開始</button>
+    <h3 style="color:#ff4444;">売却ゾーン</h3>
+    <div id="sellZone"></div>
+
+    <button onclick="battle()">戦闘開始</button>
 </div>
 
 <div id="battle" class="hidden">
@@ -52,12 +46,10 @@
 </div>
 
 <div id="gameOverScreen" class="hidden">
-    <h1 class="text-danger">GAME OVER</h1>
+    <h1>GAME OVER</h1>
     <button onclick="backToTitle()">タイトルへ戻る</button>
 </div>
 
-<!-- JS読み込み -->
 <script src="main.js"></script>
-
 </body>
 </html>
