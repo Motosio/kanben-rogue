@@ -183,6 +183,10 @@ function startBattle() {
     battleQueue = [];
     isProcessing = false;
     enemies = JSON.parse(JSON.stringify(nextEnemies));
+    enemies.forEach(e => {
+　　　　  e.status = [];
+        e.skillCount = 0;
+    });
     deck.forEach(c => { c.currentHp = c.hp + (c.rank - 1) * 800; c.status = []; c.skillCount = 0; });
     deck.forEach(c => { if (c.skill && c.skill.timing === "start") battleQueue.push({ type: "skill", actor: c, side: "ally" }); });
     prepareTurn();
