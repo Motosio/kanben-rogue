@@ -182,7 +182,7 @@ function startBattle() {
     logDiv.innerHTML = "<b>--- 戦闘開始 ---</b><br>";
     battleQueue = [];
     isProcessing = false;
-    enemies = JSON.parse(JSON.stringify(nextEnemies));
+    enemies = nextEnemies.map(e => copyChar(e));
     enemies.forEach(e => {
 　　　　  e.status = [];
         e.skillCount = 0;
