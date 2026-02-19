@@ -40,7 +40,12 @@ const baseChars = [
       }}},
     { name: "レオナ･フィボナッチ", rarity: 4, elem: "草", atk: 400, hp: 5000, 
       skill: { timing: "attack", interval: 3, action: (a, ts, ds) => {
-          ds.forEach(d => d.currentHp = Math.min(d.hp + (d.rank-1)*800, d.currentHp + 1000));
+          ds.forEach(d => {
+   　　　　　　 if (d.currentHp > 0) {
+    　　　　　　    const maxHp = d.hp + (d.rank - 1) * 800;
+    　　　　　　    d.currentHp = Math.min(maxHp, d.currentHp + 1000);
+  　　　　　　  }
+　　　　　　});
           log("<span style='color:#00ff00;'>味方全員を1000回復！</span>");
       }}},
     { name: "S･スフェリコン", rarity: 4, elem: "火", atk: 200, hp: 4000, 
@@ -103,6 +108,7 @@ const enemyTypes = {
 // --- 変数定義 ---
 let stage=1, coin=6, deck=[], shop=[], enemies=[], nextEnemies=[], battleQueue=[];
 let isProcessing = false;
+let battleEnded = false;
 
 // UI取得
 const ui_start=document.getElementById("start"), ui_shop=document.getElementById("shop"), ui_battle=document.getElementById("battle"), ui_clear=document.getElementById("clearScreen"), ui_over=document.getElementById("gameOverScreen"), shopCards=document.getElementById("shopCards"), deckDiv=document.getElementById("deck"), sellZone=document.getElementById("sellZone"), coinText=document.getElementById("coinText"), stageText=document.getElementById("stageText"), nextEnemyInfo=document.getElementById("nextEnemyInfo"), enemyArea=document.getElementById("enemyArea"), allyArea=document.getElementById("allyArea"), logDiv=document.getElementById("log");
@@ -333,11 +339,13 @@ function addStatus(u, type, level, turn) {
     else { u.status.push({ type, level, turn }); }
 }
 function finishBattle() {
+    battleEnded = true;
+
     if (enemies.every(e => e.currentHp <= 0)) {
-        coin += 10; stage++;
-        if (stage > 10) { hideAllScreens(); ui_clear.classList.remove("hidden"); }
-        else { hideAllScreens(); ui_shop.classList.remove("hidden"); refreshShop(); }
-    } else { hideAllScreens(); ui_over.classList.remove("hidden"); }
+        log("<b style='color:#00ffcc;'>--- 勝利！ タップで続行 ---</b>");
+    } else {
+        log("<b style='color:#ff4444;'>--- 敗北… タップで終了 ---</b>");
+    }
 }
 function calcAtk(u){
     let b = u.atk + (u.rank ? (u.rank - 1) * 80 : 0);
@@ -354,4 +362,30 @@ deckDiv.ondragover=e=>e.preventDefault();
 deckDiv.ondrop=e=>{ let i=e.dataTransfer.setData("shopIndex", ""); i=e.dataTransfer.getData("shopIndex"); if(i!=="") buy(Number(i)); };
 sellZone.ondragover=e=>e.preventDefault();
 sellZone.ondrop=e=>{ let i=e.dataTransfer.getData("deckIndex"); if(i!=="") { let c=deck[i]; coin+=cost(c.rarity); deck.splice(i,1); coinText.innerText=coin; drawDeck(); } };
-ui_battle.addEventListener("click", () => { if (!isProcessing && battleQueue.length > 0) nextTurn(); });
+ui_battle.addEventListener("click", () => {
+
+    if (battleEnded) {
+        battleEnded = false;
+
+        if (enemies.every(e => e.currentHp <= 0)) {
+            coin += 10;
+            stage++;
+            if (stage > 10) {
+                hideAllScreens();
+                ui_clear.classList.remove("hidden");
+            } else {
+                hideAllScreens();
+                ui_shop.classList.remove("hidden");
+                refreshShop();
+            }
+        } else {
+            hideAllScreens();
+            ui_over.classList.remove("hidden");
+        }
+        return;
+    }
+
+    if (!isProcessing && battleQueue.length > 0) {
+        nextTurn();
+    }
+});
